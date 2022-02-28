@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from '../routes/route'
 import { useCrypto } from '../stores/crypto'
-import { hasAdminRole, isRouteFromBase } from './router-helper'
-import { checkForProvider, connectProvider, isAccountConnected } from './web3'
+import { getCookie } from './cookies'
+import {  isRouteFromBase } from './router-helper'
+import { checkForProvider, connectToBlockchain} from './web3'
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -14,7 +15,8 @@ router.beforeEach(async (to) => {
     if(crypto.provider == null || crypto.signer == null || crypto.contract == null ) {
         const provider = checkForProvider()
         if(!provider && !isRouteFromBase(router)) router.push('/');
-        if(crypto.signer == null && isAccountConnected()) await connectProvider(crypto)
+        console.log(getCookie('crypto') === 'true')
+        if(getCookie('crypto') === 'true') await connectToBlockchain(crypto)
     }
     if(to.name == "login") return
 })
