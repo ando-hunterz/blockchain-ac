@@ -1,9 +1,15 @@
 <script setup>
 import { onBeforeMount, reactive } from "@vue/runtime-core";
+import { useRouter } from "vue-router";
 import { useCrypto } from "../stores/crypto";
+import { hasAdminRole } from "../utils/router-helper";
 
-const crypto = useCrypto();
+const crypto = useCrypto()
+const router = useRouter()
 
+// onBeforeMount(async () => {
+//   if(await hasAdminRole() == false) return router.push("/")
+// })
  
 </script>
 

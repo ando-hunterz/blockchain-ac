@@ -1,4 +1,5 @@
 <script>
+import { addFile } from '../utils/ipfs'
 // import { ref } from "@vue/reactivity";
 // import { computed } from "@vue/runtime-core";
 
@@ -60,14 +61,15 @@ export default {
     },
     async drop(e) {
       let files = [...e.dataTransfer.files];
-      let images = files.filter((file) => file.type.indexOf("image/") >= 0);
+      files.forEach((file) => {if(file.size > 3*10**6) alert('file size exceeded')})
+      let images = files.filter((file) => file.type.indexOf("image/") >= 0 && file.size < 3*10**6);
       let promises = [];
       images.forEach((file) => {
         promises.push(this.getBase64(file));
       });
       let sources = await Promise.all(promises);
       this.imageSources = this.imageSources.concat(sources);
-      images.forEach((image) => {
+      images.forEach(async (image) => {
           this.$emit("photo-added", image);
       })
       this.isDragging = false;
