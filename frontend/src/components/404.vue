@@ -1,5 +1,4 @@
-<script>
-</script>
+<script></script>
 
 <template>
   <h1>404</h1>
