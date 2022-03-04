@@ -1,10 +1,13 @@
 <script setup>
 // import { ref } from 'vue'
 import { onBeforeMount, reactive } from "@vue/runtime-core";
-import { checkForProvider, connectProvider, connectToBlockchain } from '../utils/web3'
+import {
+  checkForProvider,
+  connectProvider,
+  connectToBlockchain,
+} from "../utils/web3";
 import { useCrypto } from "../stores/crypto";
-import { baseRouteTo} from "../utils/router-helper";
-import { getEncryptedCookie } from "../utils/cookies";
+import { baseRouteTo } from "../utils/router-helper";
 
 const crypto = useCrypto();
 
@@ -13,9 +16,13 @@ const state = reactive({
 });
 
 const connect = async () => {
-  connectToBlockchain(crypto).then(baseRouteTo)
-}
-
+  try {
+    await connectToBlockchain(crypto);
+    await baseRouteTo();
+  } catch (e) {
+    window.alert(e);
+  }
+};
 </script>
 
 <template>
@@ -28,7 +35,7 @@ const connect = async () => {
     >
       Connect Metamask
     </button>
-    
+
     <h2 v-else>⚠ No Wallet Provider found</h2>
   </div>
 </template>

@@ -1,56 +1,31 @@
 <script>
-import { addFile } from '../utils/ipfs'
-// import { ref } from "@vue/reactivity";
-// import { computed } from "@vue/runtime-core";
-
-// const isDragging = ref(false);
-// const imageSources = ref([]);
-
-// const getClasses = computed(() => {
-//   return { isDragging: isDragging };
-// });
-
-// const dragOver = () => (isDragging = true);
-// const dragLeave = () => (isDragging = true);
-
-// const drop = async (e) => {
-//   let files = [...e.dataTransfer.files];
-//   let images = files.filter((file) => file.type.indexOf("image/") >= 0);
-//   let promises = [];
-//   images.forEach((file) => {
-//     promises.push(getBase64(file));
-//   });
-//   let sources = await Promise.all(promises);
-//   imageSources = imageSources.concat(sources);
-//   isDragging = false;
-// };
-
-// const requestUploadFile = () => {
-//   var src = this.$refs.uploadmyfile;
-//   drop({ dataTransfer: src });
-// };
-
-// const getBase64 = (file) => {
-//   const reader = new FileReader();
-//   return new Promise((resolve) => {
-//     reader.onload = (ev) => {
-//       resolve(ev.target.result);
-//     };
-//     reader.readAsDataURL(file);
-//   });
-// };
+import { getImageFile } from '../utils/ipfs';
 export default {
   name: "DropImages",
+  props: {
+    photos: {
+      type: Object,
+      default: null
+    }
+  },
   data() {
     return {
       isDragging: false,
       imageSources: [],
+      immutableSources: []
     };
   },
   computed: {
     getClasses() {
       return { isDragging: this.isDragging };
     },
+  },
+  async beforeMount() {
+    if(this.photos == null) return;
+    console.log(this.photos.length)
+    for(let i = 0; i < this.photos.length; i++){
+      this.immutableSources.push(await getImageFile(this.photos[i]));
+    }
   },
   methods: {
     dragOver() {
@@ -61,8 +36,12 @@ export default {
     },
     async drop(e) {
       let files = [...e.dataTransfer.files];
-      files.forEach((file) => {if(file.size > 3*10**6) alert('file size exceeded')})
-      let images = files.filter((file) => file.type.indexOf("image/") >= 0 && file.size < 3*10**6);
+      files.forEach((file) => {
+        if (file.size > 3 * 10 ** 6) alert("file size exceeded");
+      });
+      let images = files.filter(
+        (file) => file.type.indexOf("image/") >= 0 && file.size < 3 * 10 ** 6
+      );
       let promises = [];
       images.forEach((file) => {
         promises.push(this.getBase64(file));
@@ -70,8 +49,8 @@ export default {
       let sources = await Promise.all(promises);
       this.imageSources = this.imageSources.concat(sources);
       images.forEach(async (image) => {
-          this.$emit("photo-added", image);
-      })
+        this.$emit("photo-added", image);
+      });
       this.isDragging = false;
     },
     requestUploadFile() {
@@ -88,10 +67,10 @@ export default {
       });
     },
     deletePhoto(index) {
-        this.imageSources.splice(index, 1);
-        this.$emit('photo-deleted', index)
-    }
-  },
+      this.imageSources.splice(index, 1);
+      this.$emit("photo-deleted", index);
+    },
+  }
 };
 </script>
 
@@ -103,7 +82,7 @@ export default {
     @dragleave.prevent="dragLeave"
     @drop.prevent="drop($event)"
   >
-    <div class="img" v-for="(img,index) in imageSources">
+    <div v-for="(img, index) in imageSources" class="img">
       <div class="relative">
         <p
           class="absolute right-0 -mr-2 -mt-2 p-1 bg-white rounded-full shadow-md hover:bg-gray-100 transition-all"
@@ -115,15 +94,19 @@ export default {
       </div>
     </div>
 
-    <h1 v-if="imageSources.length == 0">Drop some images</h1>
+    <div v-for="img in immutableSources" class="img">
+      <img :src="img" />
+    </div>
+
+    <h1 v-if="imageSources.length == 0 && immutableSources.length == 0">Drop some images</h1>
 
     <div class="manual">
       <label for="uploadmyfile">
         <p>or pick from device</p>
       </label>
       <input
-        type="file"
         id="uploadmyfile"
+        type="file"
         :accept="'image/*'"
         multiple
         @change="requestUploadFile"
@@ -155,8 +138,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  width: 30%;
 }
 #img {
   width: 100%;
