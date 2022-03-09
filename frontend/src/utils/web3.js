@@ -85,28 +85,6 @@ const isAccountConnected = () => {
   return result === "true" ? true : false;
 };
 
-const createUserHash = (firstName, lastName) => {
-  return (
-    firstName.toUpperCase() +
-    "_" +
-    (lastName == null || lastName == "" ? 0 : lastName.toUpperCase())
-  );
-};
-
-const createEnumUserHash = async (firstName, nameString, crypto) => {
-  let count = 0;
-  let newNameString;
-  let found = await crypto.contract.checkUser(keccak256(utils.toUtf8Bytes(nameString)));
-  if(!found) return nameString
-  while (
-    found
-  ) {
-    count++;
-    newNameString = firstName.toUpperCase() + "_" + count++;
-    found = await crypto.contract.checkUser(keccak256(utils.toUtf8Bytes(newNameString)));
-  }
-  return newNameString;
-};
 
 export {
   checkForProvider,
@@ -114,6 +92,4 @@ export {
   isAccountConnected,
   getSignerAddress,
   connectToBlockchain,
-  createUserHash,
-  createEnumUserHash,
 };

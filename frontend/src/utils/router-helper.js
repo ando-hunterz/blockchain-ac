@@ -12,8 +12,6 @@ const isAdmin = async () => {
   console.log("admin check");
   const crypto = useCrypto();
   const address = await crypto.signer.getAddress();
-  console.log(getEncryptedCookie("role", address));
-  console.log(getEncryptedCookie("role", address) != "admin");
   if (getEncryptedCookie("role", address) != "admin") return false;
   return true;
 };
@@ -45,4 +43,4 @@ const baseRouteTo = async () => {
   }
 };
 
-export { hasAdminRole, isLogin, isRouteFromBase, routeTo, baseRouteTo };
+export { hasAdminRole, isLogin, isRouteFromBase, routeTo, baseRouteTo, isAdmin };
