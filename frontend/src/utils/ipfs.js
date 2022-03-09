@@ -21,6 +21,7 @@ const addFile = async (file) => {
 const uploadPhotos = async (photos) => {
   let photoUrl = [];
   for (const file of photos) {
+    console.log(file)
     photoUrl.push(await addFile(file));
   }
   return photoUrl;

@@ -25,7 +25,6 @@ router.beforeEach(async (to) => {
     if(!await window.ethereum._metamask.isUnlocked() && getCookie('crypto') != undefined) {
       removeCookies('crypto');
       removeCookies('role')
-      console.log('routing')
       router.push('/')
     }
     if (!provider && !isRouteFromBase(router)) router.push("/");
