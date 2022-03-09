@@ -1,12 +1,13 @@
 <script setup>
-import { onBeforeMount } from "@vue/runtime-core";
 import { useCrypto } from "./stores/crypto";
+import { useNavigation } from "./stores/navigation";
 import { removeCookies } from "./utils/cookies";
 import { routeTo } from "./utils/router-helper";
+import LoadingComponent from './components/LoadingComponent.vue'
+import AlertComponent from './components/AlertComponent.vue'
 
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
 const crypto = useCrypto();
+const navigation = useNavigation();
 
 if (window.ethereum) {
   window.ethereum.on("accountsChanged", (account) => {
@@ -35,5 +36,7 @@ window.addEventListener("beforeunload", () => {
 </script>
 
 <template>
+  <loading-component v-if="navigation.loading"></loading-component>
+  <alert-component v-if="navigation.alert.show"></alert-component>
   <router-view></router-view>
 </template>

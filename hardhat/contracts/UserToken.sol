@@ -18,6 +18,9 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable
     address[] private userAccounts;
     bytes32[] private userHash;
     mapping(bytes32 => bool) private hasUser;
+    mapping(address => string) private userDefault;
+
+    event userMint(address indexed to, string indexed uri);
 
     Counters.Counter private _tokenIdCounter;
 
@@ -27,7 +30,7 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable
         _grantRole(MINTER_ROLE, msg.sender);
     }
 
-    function safeMint(address to, string memory uri, bytes32 _hash) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, string memory uri, bytes32 _hash, string memory _uri) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter.current();
         userAccounts.push(to);
         userHash.push(_hash);
@@ -35,14 +38,38 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        setDefaultKeystore(to, _uri);
+        emit userMint(to, uri);
     }
 
-    function getUser() public view onlyRole(MINTER_ROLE) returns (address[] memory) {
-        return userAccounts;
+    function setDefaultKeystore(address _to, string memory uri) private {
+        userDefault[_to] = uri;
     }
 
-    function checkUser(bytes32 _hash) public view returns (bool) {
+    function getDefaultKeystore(address _to) public view onlyRole(MINTER_ROLE) returns (string memory) {
+        return userDefault[_to];
+    }
+
+    function deleteMapping(bytes32 _hash) public onlyRole(MINTER_ROLE) {
+        delete hasUser[_hash];
+    }
+
+    function getUsers() public view onlyRole(MINTER_ROLE) returns (uint256) {
+        return userAccounts.length;
+    }
+
+    function checkUser(bytes32 _hash) public view onlyRole(MINTER_ROLE) returns (bool)  {
         return hasUser[_hash];
+    }
+
+    function getUser(uint256 index) public view onlyRole(MINTER_ROLE) returns (address) {
+        return userAccounts[index];
+    }
+
+    function updatePassword(uint256 tokenId, string memory uri) public {
+        address owner = ownerOf(tokenId);
+        require(msg.sender == owner, "Not own account");
+        _setTokenURI(tokenId, uri);
     }
 
     function updateUserMetadata(uint256 tokenId, string memory uri) public onlyRole(MINTER_ROLE) {
@@ -54,9 +81,19 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable
         return hasRole(DISABLED_ROLE, to);
     }
 
-    function updateUserBalance(address _to) public payable onlyRole(MINTER_ROLE) returns (bool) {
-        (bool amountSent, ) = _to.call{value: msg.value}("");
-        return amountSent;
+    function getUserInfo(address addr) public view returns (string memory) {
+       uint tokenId = tokenOfOwnerByIndex(addr, 0);
+       return tokenURI(tokenId);
+    }
+
+    function updateUserBalance(address payable _to) public payable onlyRole(MINTER_ROLE) {
+        _to.transfer(msg.value);
+    }
+
+    function updateUser(bytes32 _hash, string memory uri, uint256 tokenId) public onlyRole(MINTER_ROLE) {
+        userHash.push(_hash);
+        hasUser[_hash] = true;
+        _setTokenURI(tokenId, uri);
     }
 
     receive() external payable {}

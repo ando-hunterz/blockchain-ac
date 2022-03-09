@@ -82,7 +82,7 @@ export default {
     @dragleave.prevent="dragLeave"
     @drop.prevent="drop($event)"
   >
-    <div v-for="(img, index) in imageSources" class="img">
+    <div v-for="(img, index) in imageSources" class="img w-1/2 md:w-1/4">
       <div class="relative">
         <p
           class="absolute right-0 -mr-2 -mt-2 p-1 bg-white rounded-full shadow-md hover:bg-gray-100 transition-all"
@@ -94,7 +94,7 @@ export default {
       </div>
     </div>
 
-    <div v-for="img in immutableSources" class="img">
+    <div v-for="img in immutableSources" class="img w-full md:w-1/4">
       <img :src="img" />
     </div>
 
@@ -102,7 +102,7 @@ export default {
 
     <div class="manual">
       <label for="uploadmyfile">
-        <p>or pick from device</p>
+        <p class="pb-2">or pick from device</p>
       </label>
       <input
         id="uploadmyfile"
@@ -120,25 +120,27 @@ export default {
   width: 100%;
   height: 100%;
   background-color: #eee;
-  border: 10px solid #eee;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 2rem;
+  padding-bottom: 3rem;
   transition: background-color 0.2s ease-in-out;
   font-family: sans-serif;
   overflow: hidden;
   position: relative;
+  margin-top: 1rem;
+  border-radius: 0.375rem;
 }
 .isDragging {
   background-color: #999;
+  border-radius: 0.375rem;
 }
 .img {
   padding: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30%;
 }
 #img {
   width: 100%;
@@ -151,7 +153,6 @@ export default {
   width: 100%;
   text-align: center;
   font-size: 0.8rem;
-  text-decoration: underline;
 }
 #uploadmyfile {
   display: none;

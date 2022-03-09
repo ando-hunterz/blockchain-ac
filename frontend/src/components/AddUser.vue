@@ -2,17 +2,25 @@
 import { reactive } from "@vue/reactivity";
 import { watch } from "@vue/runtime-core";
 import { useCrypto } from "../stores/crypto";
-import { addFile, uploadPhotos } from "../utils/ipfs";
+import { uploadPhotos } from "../utils/ipfs";
 import UserDropzone from "./UserDropzone.vue";
 import { alphaNumeric, nameValidation } from "../utils/validator";
 import { Wallet } from "@ethersproject/wallet";
 import { utils } from "ethers";
 import { keccak256 } from "@ethersproject/keccak256";
-import { createEnumUserHash, createUserHash } from "../utils/web3";
-import { downloadBlob, makeJsonObject } from "../utils/file";
+import {
+  createEnumUserHash,
+  createKeystore,
+  createMetadata,
+  createUserHash,
+} from "../utils/account";
+import { downloadBlob } from "../utils/file";
+import { useNavigation } from "../stores/navigation";
 
 const crypto = useCrypto();
+const navigation = useNavigation();
 
+// eslint-disable-next-line no-undef
 const emits = defineEmits(["user-modal-closed"]);
 
 const form = reactive({
@@ -59,76 +67,111 @@ watch(
 );
 
 const saveUser = async () => {
-  error.photos = form.photos.length < 1 ? "Photo is insufficient" : null;
-  if (
-    error.firstName != null ||
-    error.lastName != null ||
-    error.photos != null
-  ) {
-    return;
+  error.photos = form.photos.length < 3 ? "Photo is insufficient" : null;
+  if (error.photos != null) {
+    navigation.addAlert({ message: error.photos, type: "Error" });
   }
-  let photoUrl;
-  for(const photo in form.photos) {
-    photoUrl.push(await uploadPhotos(photo));
-  }
-  if (form.lastName == null) {
-    form.nameString = await createEnumUserHash(
-      form.firstName,
-      form.nameString,
-      crypto
-    );
-  }
-  let name =
-    form.firstName + (form.lastName == null ? "" : " " + form.lastName);
-  const account = Wallet.createRandom();
-  const password = keccak256(utils.toUtf8Bytes(form.nameString));
-  const jsonKey = await account.encrypt(password);
-  const JsonKeyStore = new File(
-    [makeJsonObject(jsonKey)],
-    account.address + "-key.json"
-  );
-  const jsonKeyURI = addFile(JsonKeyStore);
-  const jsonMetadata = {
-    name: name,
-    photo: photoUrl,
-    keystore: jsonKeyURI
-  };
-  const jsonURI = new File(
-    [makeJsonObject(jsonMetadata)],
-    account.address + ".json"
-  );
-  const metadataURI = await addFile(jsonURI);
-  const address = await crypto.signer.getAddress();
-  const privateKey = new Blob([account.privateKey], {
-    type: "text/plain",
-  })
-  downloadBlob(privateKey, account.address+".txt")
-  const tx = {
-    from: address,
-    to: account.address,
-    value: utils.parseEther("0.001"),
-  };
-  await crypto.signer.sendTransaction(tx);
   try {
-    await crypto.contract.safeMint(account.address, metadataURI, password);
+    if (
+      error.firstName != null ||
+      error.lastName != null ||
+      error.photos != null
+    ) {
+      return;
+    }
+    const photoUrl = await uploadPhotos(form.photos);
+    if (form.lastName == null) {
+      form.nameString = await createEnumUserHash(
+        form.firstName,
+        form.nameString,
+        crypto
+      );
+    }
+    let name =
+      form.firstName + (form.lastName == null ? "" : " " + form.lastName);
+    if (
+      await crypto.contract.checkUser(
+        keccak256(utils.toUtf8Bytes(form.nameString))
+      )
+    ) {
+      navigation.addAlert({ message: "Name Found", type: "Error" });
+      return;
+    }
+    navigation.setLoading();
+    const account = Wallet.createRandom();
+    const password = keccak256(utils.toUtf8Bytes(form.nameString));
+    const jsonKeyURI = await createKeystore(account, password);
+    const metadataURI = await createMetadata(account, jsonKeyURI, {
+      name: name,
+      photoUrl: photoUrl,
+    });
+    const address = await crypto.signer.getAddress();
+    const privateKey = new Blob([account.privateKey], {
+      type: "text/plain",
+    });
+    downloadBlob(privateKey, account.address + ".txt");
+    const tx = {
+      from: address,
+      to: account.address,
+      value: utils.parseEther("0.5"),
+    };
+    await crypto.signer.sendTransaction(tx);
+    await crypto.contract.safeMint(
+      account.address,
+      metadataURI,
+      password,
+      jsonKeyURI
+    );
+    navigation.clearLoading();
   } catch (e) {
-    console.log(e);
+    navigation.clearLoading();
+    navigation.addAlert({ message: e.message, type: "Error" });
+    return;
   }
 };
 </script>
 
 <template>
-  <h1>Create User</h1>
-  <p @click="closeModal">❌</p>
-  <div class="flex flex-col">
-    <input v-model="form.firstName" type="text" placeholder="First Name..." />
-    <div v-if="error.firstName != null">{{ error.firstName }}</div>
-    <input v-model="form.lastName" type="text" placeholder="Last Name.." />
-    <div v-if="error.lastName != null">{{ error.lastName }}</div>
-    <user-dropzone
-      @photo-added="pushPhoto"
-      @photo-deleted="deletePhoto"
-    ></user-dropzone>
-    <button @click="saveUser()">save</button>
+  <div
+    class="bg-white rounded-md px-6 pt-6 py-8 absolute top-0 z-20 w-full drop-shadow"
+  >
+    <div class="flex flex-row">
+      <span class="grow text-xl font-semibold">Create User</span>
+      <span class="text-right" @click="closeModal">❌</span>
+    </div>
+    <div class="flex flex-col gap-2 mt-4">
+      <label for="firstName">First Name</label>
+      <input
+        v-model="form.firstName"
+        type="text"
+        class="border-2 rounded pl-2 focus:outline-none focus:border-gray-400"
+        placeholder="First Name..."
+      />
+      <div v-if="error.firstName != null" class="text-red-600">
+        {{ error.firstName }}
+      </div>
+      <label for="firstName">Last Name</label>
+      <input
+        v-model="form.lastName"
+        type="text"
+        placeholder="Last Name.."
+        class="border-2 rounded pl-2 focus:outline-none focus:border-gray-400"
+      />
+      <div v-if="error.lastName != null" class="text-red-600">
+        {{ error.lastName }}
+      </div>
+      <user-dropzone
+        @photo-added="pushPhoto"
+        @photo-deleted="deletePhoto"
+      ></user-dropzone>
+    </div>
+    <div class="text-center mt-4">
+      <button
+        @click="saveUser()"
+        class="bg-blue-500 text-white rounded-md px-4 mx-auto py-1"
+      >
+        Save
+      </button>
+    </div>
   </div>
 </template>
