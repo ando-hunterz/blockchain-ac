@@ -5,6 +5,7 @@ import {
   getCookie,
 } from "./cookies";
 import UserContract from "../contracts/UserToken.sol/UserToken.json";
+import LogContract from '../contracts/LogToken.sol/LogToken.json'
 import { useCrypto } from "../stores/crypto";
 import { keccak256 } from "ethers/lib/utils";
 
@@ -58,6 +59,17 @@ const connectUserContract = async (crypto) => {
   addCookie("crypto", true);
 };
 
+const connectLogContract = async (crypto) => {
+  const contract = new ethers.Contract(
+    import.meta.env.VITE_LOG_CONTRACT_ADDR,
+    LogContract.abi,
+    crypto.signer
+  );
+  crypto.$patch({
+    logContract: contract,
+  });
+}
+
 const getSignerAddress = async () => {
   const crypto = useCrypto();
   const address = await crypto.signer.getAddress();
@@ -92,4 +104,5 @@ export {
   isAccountConnected,
   getSignerAddress,
   connectToBlockchain,
+  connectLogContract
 };

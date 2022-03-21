@@ -61,7 +61,7 @@ const getQr = async () => {
     const keystore = await getJsonFile(state.account.keystore);
     const password = keccak256(utils.toUtf8Bytes(state.password));
     const wallet = await Wallet.fromEncryptedJson(keystore, password);
-    await generateQR(wallet.publicKey + "-" + wallet.privateKey);
+    await generateQR(wallet.address + "-" + wallet.privateKey);
     state.logged = true;
     state.password = null;
     navigation.clearLoading();
@@ -116,6 +116,7 @@ const resetKey = () => {
 
 onBeforeMount(async () => {
   state.account = await getDetails();
+  console.log(state.account != undefined)
 });
 </script>
 
@@ -125,7 +126,7 @@ onBeforeMount(async () => {
       class="w-full bg-white rounded-md text-xl text-center px-4 py-6 drop-shadow"
     >
       Welcome Back
-      <span class="font-semibold">{{ state.account.name }}</span> 👋
+      <span class="font-semibold" v-if="state.account != undefined">{{ state.account.name }}</span> 👋
     </div>
     <div class="flex flex-col my-4">
       <div v-if="modal.keys">
@@ -133,7 +134,7 @@ onBeforeMount(async () => {
           <img
             v-if="qr != null"
             :src="qr"
-            class="mx-auto rounded-md drop-shadow md:w-1/2"
+            class="mx-auto rounded-md drop-shadow md:w-1/2 w-full"
           />
           <p v-else>Please Login</p>
           <button

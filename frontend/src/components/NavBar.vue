@@ -58,10 +58,10 @@ onBeforeMount(async () => {
               <span class="text-center">📟</span>
               <span class="col-span-2">Manage Node</span>
             </div>
-            <div class="grid grid-cols-3 w-full">
+            <router-link to="/admin/log" class="grid grid-cols-3 w-full">
               <span class="text-center">📄</span>
               <span class="col-span-2">Show Logs</span>
-            </div>
+            </router-link>
           </div>
         </div>
       <div class="bg-gray-100 px-6 py-4 overflow-visible overscroll-none grow">
