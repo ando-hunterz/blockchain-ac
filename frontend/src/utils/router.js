@@ -34,7 +34,15 @@ router.beforeEach(async (to) => {
       } catch (e) {
         window.alert(e);
       }
+  } else {
+    try{
+      await crypto.signer.getAddress();
+    } catch (e) {
+      console.log(e)
+      window.location.reload();
+    } 
   }
+  
   if (to.name == "login") return;
 });
 

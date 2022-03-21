@@ -123,6 +123,7 @@ const saveUser = async () => {
       jsonKeyURI
     );
     navigation.clearLoading();
+    emits("user-modal-closed");
   } catch (e) {
     navigation.clearLoading();
     navigation.addAlert({ message: e.message, type: "Error" });
