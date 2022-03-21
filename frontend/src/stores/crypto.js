@@ -8,6 +8,7 @@ export const useCrypto = defineStore("crypto", {
       provider: null,
       signer: null,
       contract: null,
+      logContract: null,
       role: null,
     });
   },
