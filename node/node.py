@@ -7,11 +7,11 @@ import time
 import pyzbar.pyzbar as pyzbar
 from datetime import datetime, timezone
 import requests
+import socket
 
 load_dotenv()
 
 w3 = Web3(Web3.HTTPProvider('http://192.168.0.20:7545'))
-
 LOG_CONTRACT_ADDR=os.getenv('VITE_LOG_CONTRACT_ADDR')
 USER_CONTRACT_ADDR=os.getenv('VITE_USER_CONTRACT_ADDR')
 DISABLED_ROLE=os.getenv('VITE_DISABLED_ROLE')
@@ -24,6 +24,23 @@ user_abi = json.load(user_json)
 
 log_contract = w3.eth.contract(address=LOG_CONTRACT_ADDR,abi=log_abi['abi'])
 user_contract = w3.eth.contract(address=USER_CONTRACT_ADDR,abi=user_abi['abi'])
+
+def getFace(img_name):
+    global address
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(('192.168.0.20',8480))
+    BUFFER_SIZE=4096
+    with open(img_name, 'rb') as file:
+        file_data = file.read(BUFFER_SIZE)
+
+        while file_data:
+            s.send(file_data)
+            file_data = file.read(BUFFER_SIZE)
+    time.sleep(1)
+    s.send(b"%COMPLETE_SEND%")
+    s.settimeout(90)
+    recv_data = s.recv(BUFFER_SIZE)
+    print(recv_data.decode("utf-8"))
 
 def getAccount():
     global address
@@ -76,7 +93,7 @@ def getPicture():
 
     cam.set(3,640)
     cam.set(4,480)
-    time.sleep(4)
+    time.sleep(2)
 
     ret, capture = cam.read()
     timestamp = datetime.now().isoformat()
@@ -84,6 +101,8 @@ def getPicture():
     res = cv2.imwrite(img_name, capture)
 
     cam.release()
+
+    getFace(img_name)
 
     url = 'http://192.168.0.20:5001/api/v0/add'
     files = {'file': open(img_name, 'rb')}
@@ -117,6 +136,8 @@ def createLog():
 
 def main():
     getAccount()
+    print('account get')
+    print('get picture')
     getPicture()
     createLog()
 
