@@ -20,7 +20,7 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, AccessControlE
     mapping(bytes32 => bool) private hasUser;
     mapping(address => string) private userDefault;
 
-    event userMint(address indexed to, string indexed uri);
+    event userMint(address indexed to, uint256 indexed tokenId);
 
     Counters.Counter private _tokenIdCounter;
 
@@ -39,7 +39,7 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, AccessControlE
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
         setDefaultKeystore(to, _uri);
-        emit userMint(to, uri);
+        emit userMint(to, tokenId);
     }
 
     function setDefaultKeystore(address _to, string memory uri) private {
