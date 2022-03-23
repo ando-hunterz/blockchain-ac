@@ -1,1 +1,3 @@
 deepface
+web3
+python-dotenv
