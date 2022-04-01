@@ -38,11 +38,12 @@ onBeforeMount(async () => {
     const log = {
       name: jsonAccount.name,
       address: owner,
-      uri: jsonUri,
+      uri: JSON.parse(jsonUri),
       capture: false,
     };
     console.log(log);
     state.logs.push(log);
+    console.log(uri)
   }
 });
 </script>
