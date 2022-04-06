@@ -6,16 +6,12 @@ import { MenuIcon } from "@heroicons/vue/solid";
 
 const navigation = useNavigation();
 
-const state = {
-  isAdmin: false,
-};
-
 const hideMenu = () => {
   return { hidden: navigation.sidebar };
 };
 
 onBeforeMount(async () => {
-  state.isAdmin = await isAdmin();
+  navigation.isAdmin = await isAdmin();
 });
 </script>
 
@@ -43,7 +39,7 @@ onBeforeMount(async () => {
           class="w-48 shrink-0 absolute md:relative md:z-0 z-10 bg-white left-0 h-full"
         >
           <div
-            v-if="state.isAdmin"
+            v-if="navigation.isAdmin"
             class="flex flex-col items-center gap-4 mt-4 font-semibold"
           >
             <router-link to="/admin" class="grid grid-cols-3 w-full">
@@ -54,10 +50,6 @@ onBeforeMount(async () => {
               <span class="text-center">👤</span>
               <span class="col-span-2">Manage User</span>
             </router-link>
-            <div class="grid grid-cols-3 w-full" @click="loadingTest">
-              <span class="text-center">📟</span>
-              <span class="col-span-2">Manage Node</span>
-            </div>
             <router-link to="/admin/log" class="grid grid-cols-3 w-full">
               <span class="text-center">📄</span>
               <span class="col-span-2">Show Logs</span>

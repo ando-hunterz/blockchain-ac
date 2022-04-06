@@ -32,6 +32,8 @@ contract_json = json.load(open('contracts/UserToken.sol/UserToken.json'))
 
 contract = w3.eth.contract(address=USER_CONTRACT_ADDR, abi=contract_json['abi'])
 
+if os.path.exists('db/') == False:
+        os.makedirs('db')
 
 def findFace(file):
         
