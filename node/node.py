@@ -10,6 +10,8 @@ import requests
 import socket
 import tkinter as tk
 from PIL import Image, ImageTk
+import facerecog
+import newuser
 
 load_dotenv()
 
@@ -78,25 +80,25 @@ def picturePage():
     getPicture(face_image, picture_page)
 
 
-def getFace(img_name):
-    global address
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(('192.168.0.19',8480))
-    BUFFER_SIZE=4096
-    with open(img_name, 'rb') as file:
-        file_data = file.read(BUFFER_SIZE)
+# def getFace(img_name):
+#     global address
+#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     s.connect(('192.168.0.19',8480))
+#     BUFFER_SIZE=4096
+#     with open(img_name, 'rb') as file:
+#         file_data = file.read(BUFFER_SIZE)
 
-        while file_data:
-            s.send(file_data)
-            file_data = file.read(BUFFER_SIZE)
-    time.sleep(1)
-    s.send(b"%COMPLETE_SEND%")
-    s.settimeout(90)
-    recv_data = s.recv(BUFFER_SIZE)
-    print(recv_data.decode("utf-8"))
-    print(address)
-    if recv_data.decode('utf-8') != address:
-        exit()
+#         while file_data:
+#             s.send(file_data)
+#             file_data = file.read(BUFFER_SIZE)
+#     time.sleep(1)
+#     s.send(b"%COMPLETE_SEND%")
+#     s.settimeout(90)
+#     recv_data = s.recv(BUFFER_SIZE)
+#     print(recv_data.decode("utf-8"))
+#     print(address)
+#     if recv_data.decode('utf-8') != address:
+#         exit()
 
 def update_image(p_frame, canvas):
         canvas_im = cv2.cvtColor(p_frame, cv2.COLOR_BGR2RGB)
@@ -187,7 +189,7 @@ def getPicture(canvas, frame):
 
     cam.release()
 
-    getFace(img_name)
+    facerecog.findFace(img_name)
 
     url = 'http://192.168.0.19:8080/ipfs/'
     files = open(img_name, 'rb')
@@ -228,6 +230,7 @@ def createLog(loading):
     mainPage()
 
 def main():
+    newuser.listenNewUser()
     mainPage()
     root.mainloop()
 
