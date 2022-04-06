@@ -9,7 +9,8 @@ export const useNavigation = defineStore("navigation", {
         alert: {
             show: false,
             messages: [],
-        }
+        },
+        isAdmin: false
     }
   },
 

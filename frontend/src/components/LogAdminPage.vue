@@ -1,11 +1,13 @@
 <script setup>
 import { onBeforeMount, reactive } from "@vue/runtime-core";
 import { useCrypto } from "../stores/crypto";
+import { useNavigation } from "../stores/navigation";
 import { getImageFile, getJsonFile } from "../utils/ipfs";
 import { connectLogContract } from "../utils/web3";
 import NavBar from "./NavBar.vue";
 
 const crypto = useCrypto();
+const navigation = useNavigation();
 
 const state = reactive({
   logCount: 0,
@@ -27,6 +29,7 @@ onBeforeMount(async () => {
   if (crypto.logContract == null) {
     await connectLogContract(crypto);
   }
+  navigation.setLoading()
   state.logCount = (await crypto.logContract.totalSupply()).toNumber();
   for (let index = state.logCount - 1; index >= 0; index--) {
     const owner = await crypto.logContract.ownerOf(index);
@@ -45,6 +48,7 @@ onBeforeMount(async () => {
     state.logs.push(log);
     console.log(uri)
   }
+  navigation.clearLoading()
 });
 </script>
 
@@ -52,7 +56,7 @@ onBeforeMount(async () => {
   <nav-bar>
     <div class="w-full bg-white rounded-md p-4">
       <span class="font-semibold text-xl">Logs</span>
-      <div class="flex flex-col my-4">
+      <div class="flex flex-col my-4" v-if="state.logs.length > 0">
         <div
           v-for="(log, index) in state.logs"
           :key="index"
@@ -69,6 +73,7 @@ onBeforeMount(async () => {
           </div>
         </div>
       </div>
+      <div v-else class="my-4">No Log Found</div>
     </div>
   </nav-bar>
 </template>
