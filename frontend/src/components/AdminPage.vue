@@ -30,15 +30,6 @@ onBeforeMount(async () => {
             >Manage User >></router-link
           >
         </div>
-        <div
-          class="bg-white w-full flex flex-col py-2 px-4 mt-6 rounded-md gap-3 drop-shadow"
-        >
-          <span class="text-lg font-semibold">Node</span>
-          <span>👤 {{ state.userCount }}</span>
-          <router-link to="/admin/user" class="text-right"
-            >Manage User >></router-link
-          >
-        </div>
       </div>
 
       <!-- <router-link to="/admin/node">Manage Node</router-link> -->
