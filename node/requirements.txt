@@ -1,7 +1,8 @@
-opencv-python==4.2.0.34
-opencv-contrib-python==4.3.0.36
-pyzbar==0.1.9
-web3==5.28.0
-websockets==9.1
-python-dotenv==0.19.2
-deepface==0.0.74
+opencv-python>=4.2.0.34
+opencv-contrib-python>=4.3.0.36
+pyzbar>=0.1.9
+web3>=5.28.0
+websockets>=9.1
+python-dotenv>=0.19.2
+deepface>=0.0.74
+PIL
