@@ -47,7 +47,7 @@ def qrPage(main_page):
     loading = loadingPage()
     qr_page = tk.Frame(root)
     qr_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-    qr_canvas = tk.Label(qr_page, width=800, height=600)
+    qr_canvas = tk.Label(qr_page, width=300, height=300)
     qr_canvas.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
     qr_label = tk.Label(qr_page, text="Scan QR")
     qr_label.place(relx=0.5, rely=0, anchor=tk.N)
@@ -72,7 +72,7 @@ def picturePage():
     picture_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
     picture_label = tk.Label(picture_page, text="Show your face in the camera")
     picture_label.pack()
-    face_image = tk.Label(picture_page, width=800, height=600)
+    face_image = tk.Label(picture_page, width=300, height=300)
     face_image.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
     face_image.pack()
     picture_page.tkraise()
@@ -101,13 +101,14 @@ def picturePage():
 #         exit()
 
 def update_image(p_frame, canvas):
-        canvas_im = cv2.cvtColor(p_frame, cv2.COLOR_BGR2RGB)
-        canvas_im = Image.fromarray(canvas_im)
-        canvas_im = ImageTk.PhotoImage(canvas_im)
+    canvas_im = cv2.cvtColor(p_frame, cv2.COLOR_BGR2RGB)
+    canvas_im = Image.fromarray(canvas_im)
+    canvas_im = canvas_im.resize((300,300), Image.ANTIALIAS)
+    canvas_im = ImageTk.PhotoImage(canvas_im)
 
-        canvas.imgtk = canvas_im
-        canvas.configure(image=canvas_im)
-        root.update()
+    canvas.imgtk = canvas_im
+    canvas.configure(image=canvas_im)
+    root.update()
 
 def getAccount(canvas, page):
     global address
@@ -143,6 +144,7 @@ def getAccount(canvas, page):
 
     # When everything done, release the capture
     (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
+    print(address)
 
     if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
         address, privateKey = None, None
