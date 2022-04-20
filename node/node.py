@@ -12,6 +12,8 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import facerecog
 import newuser
+from wrapt_timeout_decorator import *
+from custom_exception import DisabledException
 
 load_dotenv()
 
@@ -123,37 +125,69 @@ def getAccount(canvas, page):
         decodedObjects = pyzbar.decode(im)
         return decodedObjects
 
+    @timeout(10)
+    def getImage(cap):
+        while(cap.isOpened()):
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+            # Our operations on the frame come here
+            im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            update_image(frame, canvas)
 
-    while(cap.isOpened()):
-        # Capture frame-by-frame
-        ret, frame = cap.read()
-        # Our operations on the frame come here
-        im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        update_image(frame, canvas)
+            decodedObjects = decode(im)
 
-        decodedObjects = decode(im)
+            if len(decodedObjects) == 1:
+                return decodedObjects
 
-        if len(decodedObjects) == 1:
-            break
+    def decodeAddress(decodedObjects):
+        global address
+        global privateKey
+        global response
 
+        cap.release()
+        cv2.destroyAllWindows()
 
-    cap.release()
-    cv2.destroyAllWindows()
+        print(decodedObjects[0].data)
 
-    print(decodedObjects[0].data)
-
-    # When everything done, release the capture
-    (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
-    print(address)
-
-    if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
+        # When everything done, release the capture
+        (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
+    
+        if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
+            print('unallowed')
+            url = 'http://192.168.0.19:8080/ipfs/'
+            timestamp = datetime.now().isoformat()
+            metadata = {
+                'time': timestamp,
+                'type': 'unallowed'
+            }
+        
+            jsonMeta = json.dumps(metadata, indent = 3)
+            print(jsonMeta)
+            res = requests.post(url, json=jsonMeta)
+            response = res.headers['Ipfs-Hash']
+            print(response)
+            loading = loadingPage()
+            createLog(loading)
+            raise DisabledException('account disabled')
+        page.destroy()
+        picturePage()
+        
+    try:
+        decodedObjects = getImage(cap)
+        decodeAddress(decodedObjects) 
+    except DisabledException: 
+        print('disabled')
         address, privateKey = None, None
+        cap.release()
+        cv2.destroyAllWindows()
         page.destroy()
         mainPage()
-    page.destroy()
-    picturePage()
-
-
+    except Exception as e: 
+        print(e)
+        cap.release()
+        cv2.destroyAllWindows() 
+        page.destroy()
+        mainPage()
 
 def getPicture(canvas, frame):
     global response
@@ -184,7 +218,8 @@ def getPicture(canvas, frame):
 
     cam.release()
     cv2.destroyAllWindows()
-
+    
+    os.makedirs(os.getcwd()+'/img')
     timestamp = datetime.now().isoformat()
     img_name = 'img/{}.jpg'.format(timestamp)
     res = cv2.imwrite(img_name, capture)
@@ -199,10 +234,12 @@ def getPicture(canvas, frame):
     response = r.headers['Ipfs-Hash']
     print(response)
     os.remove(img_name)
+    os.rmdir(os.getcwd()+'/img')
 
     metadata = {
         'time': timestamp,
-        'photo': response
+        'photo': response,
+        'type': 'allowed'
     }
 
     jsonMeta = json.dumps(metadata, indent = 3)
@@ -232,6 +269,9 @@ def createLog(loading):
     mainPage()
 
 def main():
+    if os.path.exists(os.getcwd()+'/db/') == False:
+        print('new user')
+        newuser.getUsers()
     newuser.listenNewUser()
     mainPage()
     root.mainloop()

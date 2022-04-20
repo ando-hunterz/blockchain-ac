@@ -2,10 +2,12 @@ from deepface import DeepFace
 from threading import Thread
 from web3 import Web3
 from dotenv import load_dotenv
+from pathlib import Path
 import json
 import os
 import time
 import requests
+import shutil
 
 load_dotenv()
 print(os.getcwd())
@@ -18,17 +20,25 @@ contract_json = json.load(open('contracts/UserToken.sol/UserToken.json'))
 
 contract = w3.eth.contract(address=USER_CONTRACT_ADDR, abi=contract_json['abi'])
 
-if os.path.exists('db/') == False:
-        os.makedirs('db')
 
+
+def getUsers():
+    os.makedirs(os.getcwd()+'/db') 
+    source = os.getcwd()+'/pi-configuration/vgg_face_weights.h5'
+    destination = str(Path.home())+'/.deepface/weights/vgg_face_weights.h5'
+    shutil.copyfile(source, destination)
+    total_user = contract.functions.totalSupply().call()
+    for i in range(0, total_user):
+        user_address = contract.functions.ownerOf(i).call()
+        user_path = os.getcwd()+'/db/'+user_address
+        os.makedirs(user_path)
+        uri = contract.functions.tokenURI(i).call()
+        getFile(uri, user_path)
 
 def getFile(path, image_path):
     res = requests.get('http://192.168.0.19:8080/ipfs/'+path)
     res_content = res.content.decode()
-    print(res_content)
-    print(type(res_content))
     res_dict = json.loads(res_content)
-    print(res_dict['photo'])
     index = 1
     for hash in res_dict['photo']:
         print(hash)
@@ -40,7 +50,7 @@ def getFile(path, image_path):
         os.remove('db/representations_vgg_face.pkl') 
 
 def handle_event(event):
-    img_path = 'db/'+event.args.to   
+    img_path = os.getcwd()+'/db/'+event.args.to   
     os.mkdir(img_path)
     path = contract.functions.tokenURI(event.args.tokenId).call()
     getFile(path, img_path)
