@@ -12,7 +12,7 @@ import shutil
 load_dotenv()
 print(os.getcwd())
 
-USER_CONTRACT_ADDR=os.getenv('VITE_USER_CONTRACT_ADDR')
+USER_CONTRACT_ADDR=os.getenv('USER_CONTRACT_ADDR')
 print(USER_CONTRACT_ADDR)
 w3 = Web3(Web3.HTTPProvider('http://192.168.0.19:7545'))
 
@@ -20,7 +20,15 @@ contract_json = json.load(open('contracts/UserToken.sol/UserToken.json'))
 
 contract = w3.eth.contract(address=USER_CONTRACT_ADDR, abi=contract_json['abi'])
 
-
+def checkUsers():
+    if len(next(os.walk('db'))[1]) < contract.functions.totalSupply().call():
+        for i in range(0, total_user):
+            user_address = contract.functions.ownerOf(i).call()
+            user_path = os.getcwd()+'/db/'+user_address
+            if os.path.exists(user_path) == False:
+                os.makedirs(user_path)
+                uri = contract.functions.tokenURI(i).call()
+                getFile(uri, user_path)
 
 def getUsers():
     os.makedirs(os.getcwd()+'/db') 

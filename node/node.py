@@ -18,9 +18,9 @@ from custom_exception import DisabledException
 load_dotenv()
 
 w3 = Web3(Web3.HTTPProvider('http://192.168.0.19:7545'))
-LOG_CONTRACT_ADDR=os.getenv('VITE_LOG_CONTRACT_ADDR')
-USER_CONTRACT_ADDR=os.getenv('VITE_USER_CONTRACT_ADDR')
-DISABLED_ROLE=os.getenv('VITE_DISABLED_ROLE')
+LOG_CONTRACT_ADDR=os.getenv('LOG_CONTRACT_ADDR')
+USER_CONTRACT_ADDR=os.getenv('USER_CONTRACT_ADDR')
+DISABLED_ROLE=os.getenv('DISABLED_ROLE')
 
 log_json = open('/home/pi/blockchain-ac/node/contracts/LogToken.sol/LogToken.json')
 user_json = open('/home/pi/blockchain-ac/node/contracts/UserToken.sol/UserToken.json')
@@ -35,6 +35,8 @@ root = tk.Tk()
 root.attributes('-fullscreen',True)
 root.columnconfigure(0,weight=1)
 root.rowconfigure(0,weight=1)
+
+unregister_tries = 0
 
 def mainPage():
     main_page = tk.Frame(root)
@@ -81,26 +83,6 @@ def picturePage():
     loading.destroy()
     getPicture(face_image, picture_page)
 
-
-# def getFace(img_name):
-#     global address
-#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     s.connect(('192.168.0.19',8480))
-#     BUFFER_SIZE=4096
-#     with open(img_name, 'rb') as file:
-#         file_data = file.read(BUFFER_SIZE)
-
-#         while file_data:
-#             s.send(file_data)
-#             file_data = file.read(BUFFER_SIZE)
-#     time.sleep(1)
-#     s.send(b"%COMPLETE_SEND%")
-#     s.settimeout(90)
-#     recv_data = s.recv(BUFFER_SIZE)
-#     print(recv_data.decode("utf-8"))
-#     print(address)
-#     if recv_data.decode('utf-8') != address:
-#         exit()
 
 def update_image(p_frame, canvas):
     canvas_im = cv2.cvtColor(p_frame, cv2.COLOR_BGR2RGB)
@@ -157,20 +139,47 @@ def getAccount(canvas, page):
             url = 'http://192.168.0.19:8080/ipfs/'
             timestamp = datetime.now().isoformat()
             metadata = {
+                'name': address,
+                'location': os.getenv('NODE_NAME'),
                 'time': timestamp,
                 'type': 'unallowed'
             }
-        
+            address = os.getenv('NODE_ADDR')
+            privateKey = os.getenv('NODE_PRIVATE')
             jsonMeta = json.dumps(metadata, indent = 3)
             print(jsonMeta)
             res = requests.post(url, json=jsonMeta)
             response = res.headers['Ipfs-Hash']
             print(response)
+            page.destroy()
             loading = loadingPage()
             createLog(loading)
             raise DisabledException('account disabled')
         page.destroy()
         picturePage()
+
+    def log_unregister():
+        global address
+        global privateKey
+        global response
+        url = 'http://192.168.0.19:8080/ipfs/'
+        timestamp = datetime.now().isoformat()
+        metadata = {
+            'name': os.getenv('NOACCOUNT_ADDR'),
+            'location': os.getenv('NODE_NAME'),
+            'time': timestamp,
+            'type': 'unallowed'
+        }
+        address = os.getenv('NODE_ADDR')
+        privateKey = os.getenv('NODE_PRIVATE')
+        jsonMeta = json.dumps(metadata, indent = 3)
+        print(jsonMeta)
+        res = requests.post(url, json=jsonMeta)
+        response = res.headers['Ipfs-Hash']
+        print(response)
+        page.destroy()
+        loading = loadingPage()
+        createLog(loading)
         
     try:
         decodedObjects = getImage(cap)
@@ -182,10 +191,17 @@ def getAccount(canvas, page):
         cv2.destroyAllWindows()
         page.destroy()
         mainPage()
-    except Exception as e: 
+        cap.release() 
+        cv2.destroyAllWindows()
+        print('timeout')
+    except Exception as e:
         print(e)
         cap.release()
         cv2.destroyAllWindows() 
+        global unregister_tries
+        unregister_tries += 1
+        if unregister_tries > 2:
+            log_unregister()
         page.destroy()
         mainPage()
 
@@ -237,6 +253,7 @@ def getPicture(canvas, frame):
     os.rmdir(os.getcwd()+'/img')
 
     metadata = {
+        'location': os.getenv('NODE_NAME'),
         'time': timestamp,
         'photo': response,
         'type': 'allowed'
@@ -272,6 +289,7 @@ def main():
     if os.path.exists(os.getcwd()+'/db/') == False:
         print('new user')
         newuser.getUsers()
+    newuser.checkUsers()
     newuser.listenNewUser()
     mainPage()
     root.mainloop()
