@@ -98,6 +98,10 @@ const border = (index) => {
   return { "border-x": true };
 };
 
+const pushNewUser = (user) => {
+  state.users.push(user)
+}
+
 onBeforeMount(async () => {
   const ua = UAParser();
   if (ua.os.name == "Android") {
@@ -116,6 +120,7 @@ onBeforeMount(async () => {
       <add-user
         v-if="modals.addUser"
         @user-modal-closed="modals.addUser = false"
+        @user-added="pushNewUser"
       ></add-user>
       <button
         v-if="!modals.isMobile"

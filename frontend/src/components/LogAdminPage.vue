@@ -25,30 +25,49 @@ const showCapture = async (index) => {
     state.logs[index].photo = await getImageFile(state.logs[index].uri.photo);
 };
 
+const bgColor = (status) => {
+  return status == "allowed" ? "bg-green-300" : "bg-red-400";
+};
+
+const getName = async (address) => {
+  const account = await crypto.contract.tokenOfOwnerByIndex(address, 0);
+  console.log(account);
+  const accountURI = await crypto.contract.tokenURI(account);
+  const jsonAccount = await getJsonFile(accountURI);
+  return jsonAccount.name;
+};
+
 onBeforeMount(async () => {
   if (crypto.logContract == null) {
     await connectLogContract(crypto);
   }
-  navigation.setLoading()
+  navigation.setLoading();
   state.logCount = (await crypto.logContract.totalSupply()).toNumber();
   for (let index = state.logCount - 1; index >= 0; index--) {
+    console.log(index);
     const owner = await crypto.logContract.ownerOf(index);
-    const account = await crypto.contract.tokenOfOwnerByIndex(owner, 0);
-    const accountURI = await crypto.contract.tokenURI(account);
-    const jsonAccount = await getJsonFile(accountURI);
     const uri = await crypto.logContract.tokenURI(index);
     const jsonUri = await getJsonFile(uri);
+    console.log(jsonUri);
+    let address, name;
+    if (owner != import.meta.env.VITE_NODE_ADDR) {
+      name = await getName(owner);
+    } else {
+      address = JSON.parse(jsonUri).name;
+      name =
+        address != import.meta.env.VITE_NOACCOUNT_ADDR
+          ? await getName(address)
+          : "Unregistered";
+    }
     const log = {
-      name: jsonAccount.name,
+      name: name,
       address: owner,
       uri: JSON.parse(jsonUri),
       capture: false,
     };
-    console.log(log);
     state.logs.push(log);
-    console.log(uri)
   }
-  navigation.clearLoading()
+  navigation.clearLoading();
 });
 </script>
 
@@ -63,10 +82,14 @@ onBeforeMount(async () => {
           class="flex flex-col"
           @click="showCapture(index)"
         >
-          <div class="flex flex-row justify-between">
+          <div
+            class="flex flex-row justify-between my-2 rounded py-1 px-2"
+            :class="bgColor(log.uri.type)"
+          >
             <span>{{ log.name }}</span>
             <span>{{ log.address }}</span>
             <span>{{ getLocaleDate(log.uri.time) }}</span>
+            <span>{{ log.uri.location }} </span>
           </div>
           <div v-if="log.capture" class="flex justify-center my-2">
             <img :src="log.photo" class="w-1/2" />
