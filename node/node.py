@@ -380,6 +380,7 @@ def getPicture(canvas, frame):
         os.remove(img_name)
         os.rmdir(os.getcwd()+'/img')
         face_capture = capture
+        frame.destroy()
         raise WrongFaceException
 
     print('face addr: '+face_addr)
