@@ -19,7 +19,8 @@ load_dotenv()
 def findFace(file):
         
     df = DeepFace.find(img_path=file, db_path="./db")
-    print(df.head)
+    
+    print(df)
     
     path = Path(df.iloc[0].identity)
 

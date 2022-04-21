@@ -13,7 +13,7 @@ from PIL import Image, ImageTk
 import facerecog
 import newuser
 from wrapt_timeout_decorator import *
-from custom_exception import DisabledException, WrongFaceException, FaceTimeout
+from custom_exception import DisabledException, WrongFaceException, FaceTimeout, UnregisteredQRError
 
 load_dotenv()
 
@@ -167,7 +167,7 @@ def getAccount(canvas, page):
         decodedObjects = pyzbar.decode(im)
         return decodedObjects
 
-    @timeout(10)
+    @timeout(30)
     def getImage(cap):
         while(cap.isOpened()):
             # Capture frame-by-frame
@@ -192,8 +192,11 @@ def getAccount(canvas, page):
         print(decodedObjects[0].data)
 
         # When everything done, release the capture
-        (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
-    
+        try: 
+            (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
+        except:
+            raise UnregisteredQRError
+
         if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
             photo = getPhoto()
             timestamp = datetime.now().isoformat()
@@ -225,7 +228,7 @@ def getAccount(canvas, page):
             'name': address,
             'location': os.getenv('NODE_NAME'),
             'time': timestamp,
-            'type': 'facetimeout',
+            'type': 'face_timeout',
             'photo': photo
         }
         
@@ -244,7 +247,7 @@ def getAccount(canvas, page):
             'name': os.getenv('NOACCOUNT_ADDR'),
             'location': os.getenv('NODE_NAME'),
             'time': timestamp,
-            'type': 'unallowed',
+            'type': 'QR_mismatch',
             'photo': photo
         }
         
@@ -252,6 +255,27 @@ def getAccount(canvas, page):
         privateKey = os.getenv('NODE_PRIVATE')
         createLog(metadata, page)
     
+    def log_timeout():
+        global address
+        global privateKey
+        global response
+        
+        photo = getPhoto()
+
+        timestamp = datetime.now().isoformat()
+        
+        metadata = {
+            'name': os.getenv('NOACCOUNT_ADDR'),
+            'location': os.getenv('NODE_NAME'),
+            'time': timestamp,
+            'type': 'timeout',
+            'photo': photo
+        }
+        
+        address = os.getenv('NODE_ADDR')
+        privateKey = os.getenv('NODE_PRIVATE')
+        createLog(metadata, page)
+
     def log_wrong_address():
         global address
         global privateKey
@@ -304,6 +328,18 @@ def getAccount(canvas, page):
         mainPage()
     except WrongFaceException:
         log_wrong_address()
+        mainPage()
+    except UnregisteredQRError:
+        cap.release()
+        cv2.destroyAllWindows() 
+        log_unregister()
+        page.destroy()
+        mainPage()
+    except TimeoutError:
+        cap.release()
+        cv2.destroyAllWindows() 
+        log_timeout()
+        page.destroy()
         mainPage()
     except Exception as e:
         print(e)
@@ -364,7 +400,7 @@ def getPicture(canvas, frame):
 
     cam.release()
 
-    
+    print(img_name) 
     try:
         face_addr = facerecog.findFace(img_name)
     except:

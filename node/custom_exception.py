@@ -6,3 +6,6 @@ class WrongFaceException(Exception):
 
 class FaceTimeout(Exception):
     pass
+
+class UnregisteredQRError(Exception):
+    pass
