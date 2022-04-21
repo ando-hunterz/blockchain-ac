@@ -13,7 +13,7 @@ from PIL import Image, ImageTk
 import facerecog
 import newuser
 from wrapt_timeout_decorator import *
-from custom_exception import DisabledException
+from custom_exception import DisabledException, WrongFaceException, FaceTimeout
 
 load_dotenv()
 
@@ -37,6 +37,7 @@ root.columnconfigure(0,weight=1)
 root.rowconfigure(0,weight=1)
 
 unregister_tries = 0
+registered_tries = 0
 
 def mainPage():
     main_page = tk.Frame(root)
@@ -94,6 +95,65 @@ def update_image(p_frame, canvas):
     canvas.configure(image=canvas_im)
     root.update()
 
+def createLog(metadata, page):  
+    def sendLog(loading, response):
+        global address
+        global privateKey
+
+        tx = log_contract.functions.safeMint(address, response).buildTransaction({'nonce': w3.eth.getTransactionCount(address), 'gasPrice': w3.eth.gas_price});
+
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=privateKey)
+
+        w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+
+        address, privateKey = None, None
+
+        loading.destroy()
+        mainPage()
+
+    url = 'http://192.168.0.19:8080/ipfs/'
+    print(metadata)
+    jsonMeta = json.dumps(metadata, indent = 3)
+    print(jsonMeta)
+    res = requests.post(url, json=jsonMeta)
+    response = res.headers['Ipfs-Hash']
+    print(response)
+    page.destroy()
+    loading = loadingPage()
+    sendLog(loading, response)
+
+def getPhoto():
+
+    cam = cv2.VideoCapture(0)
+
+    cam.set(3,640)
+    cam.set(4,480)
+    time.sleep(2)
+
+    # Capture frame-by-frame
+    ret, capture = cam.read()
+    # Our operations on the frame come here
+
+    cam.release()
+    cv2.destroyAllWindows()
+    
+    os.makedirs(os.getcwd()+'/img')
+    timestamp = datetime.now().isoformat()
+    img_name = 'img/{}.jpg'.format(timestamp)
+    res = cv2.imwrite(img_name, capture)
+
+    cam.release()
+
+
+    url = 'http://192.168.0.19:8080/ipfs/'
+    files = open(img_name, 'rb')
+    r = requests.post(url, data=files)
+    response = r.headers['Ipfs-Hash']
+    print(response)
+    os.remove(img_name)
+    os.rmdir(os.getcwd()+'/img')
+    return response
+
 def getAccount(canvas, page):
     global address
     global privateKey
@@ -135,65 +195,116 @@ def getAccount(canvas, page):
         (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
     
         if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
-            print('unallowed')
-            url = 'http://192.168.0.19:8080/ipfs/'
+            photo = getPhoto()
             timestamp = datetime.now().isoformat()
             metadata = {
                 'name': address,
                 'location': os.getenv('NODE_NAME'),
                 'time': timestamp,
-                'type': 'unallowed'
+                'type': 'disabled',
+                'photo': photo
             }
             address = os.getenv('NODE_ADDR')
             privateKey = os.getenv('NODE_PRIVATE')
-            jsonMeta = json.dumps(metadata, indent = 3)
-            print(jsonMeta)
-            res = requests.post(url, json=jsonMeta)
-            response = res.headers['Ipfs-Hash']
-            print(response)
-            page.destroy()
-            loading = loadingPage()
-            createLog(loading)
+            createLog(metadata, page)
             raise DisabledException('account disabled')
+        
         page.destroy()
         picturePage()
 
+    def log_register():
+        global address
+        global privateKey
+        global response
+        
+        photo = getPhoto()
+
+        timestamp = datetime.now().isoformat()
+        
+        metadata = {
+            'name': address,
+            'location': os.getenv('NODE_NAME'),
+            'time': timestamp,
+            'type': 'facetimeout',
+            'photo': photo
+        }
+        
+        createLog(metadata, page)
+    
     def log_unregister():
         global address
         global privateKey
         global response
-        url = 'http://192.168.0.19:8080/ipfs/'
+        
+        photo = getPhoto()
+
         timestamp = datetime.now().isoformat()
+        
         metadata = {
             'name': os.getenv('NOACCOUNT_ADDR'),
             'location': os.getenv('NODE_NAME'),
             'time': timestamp,
-            'type': 'unallowed'
+            'type': 'unallowed',
+            'photo': photo
         }
+        
         address = os.getenv('NODE_ADDR')
         privateKey = os.getenv('NODE_PRIVATE')
-        jsonMeta = json.dumps(metadata, indent = 3)
-        print(jsonMeta)
-        res = requests.post(url, json=jsonMeta)
-        response = res.headers['Ipfs-Hash']
-        print(response)
-        page.destroy()
-        loading = loadingPage()
-        createLog(loading)
+        createLog(metadata, page)
+    
+    def log_wrong_address():
+        global address
+        global privateKey
+        global response
+        global face_capture
         
+        timestamp = datetime.now().isoformat()
+       
+        os.makedirs(os.getcwd()+'/img')
+        timestamp = datetime.now().isoformat()
+        img_name = 'img/{}.jpg'.format(timestamp)
+        res = cv2.imwrite(img_name, face_capture)
+
+        url = 'http://192.168.0.19:8080/ipfs/'
+        files = open(img_name, 'rb')
+        r = requests.post(url, data=files)
+        response = r.headers['Ipfs-Hash']
+        print(response)
+        os.remove(img_name)
+        os.rmdir(os.getcwd()+'/img')
+        
+        metadata = {
+            'name': address,
+            'location': os.getenv('NODE_NAME'),
+            'time': timestamp,
+            'type': 'wrong_face',
+            'photo': response
+        }
+        
+        createLog(metadata, page)
+
+
     try:
         decodedObjects = getImage(cap)
         decodeAddress(decodedObjects) 
     except DisabledException: 
-        print('disabled')
         address, privateKey = None, None
         cap.release()
         cv2.destroyAllWindows()
         page.destroy()
         mainPage()
-        cap.release() 
+    except FaceTimeout:
+        print('face time')
         cv2.destroyAllWindows()
-        print('timeout')
+        global registered_tries
+        if registered_tries > 0:
+            log_register()
+            registered_tries = 0
+        registered_tries += 1
+        mainPage()
+    except WrongFaceException:
+        log_wrong_address()
+        mainPage()
     except Exception as e:
         print(e)
         cap.release()
@@ -202,11 +313,13 @@ def getAccount(canvas, page):
         unregister_tries += 1
         if unregister_tries > 2:
             log_unregister()
+            unregister_tries = 0
         page.destroy()
         mainPage()
 
 def getPicture(canvas, frame):
     global response
+    global address
 
     cam = cv2.VideoCapture(0)
 
@@ -216,21 +329,30 @@ def getPicture(canvas, frame):
 
     cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-    tries = 0
+    @timeout(30)
+    def getImage():
+        tries = 0
+        while(cam.isOpened()):
+            # Capture frame-by-frame
+            ret, capture = cam.read()
+            # Our operations on the frame come here
+            im = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
+            update_image(capture, canvas)
 
-    while(cam.isOpened()):
-        # Capture frame-by-frame
-        ret, capture = cam.read()
-        # Our operations on the frame come here
-        im = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
-        update_image(capture, canvas)
+            faces = cascade.detectMultiScale(im, scaleFactor=1.1, minNeighbors=5);
 
-        faces = cascade.detectMultiScale(im, scaleFactor=1.1, minNeighbors=5);
+            if len(faces) > 0 and tries >= 10:
+                return capture
+                break
+            if len(faces) > 0:
+                tries = tries + 1
 
-        if len(faces) > 0 and tries >= 10:
-            break
-        if len(faces) > 0:
-            tries = tries + 1
+    try:
+        capture = getImage()
+    except:
+        cam.release()
+        frame.destroy()
+        raise FaceTimeout
 
     cam.release()
     cv2.destroyAllWindows()
@@ -242,7 +364,25 @@ def getPicture(canvas, frame):
 
     cam.release()
 
-    facerecog.findFace(img_name)
+    
+    try:
+        face_addr = facerecog.findFace(img_name)
+    except:
+        os.remove(img_name)
+        os.rmdir(os.getcwd()+'/img')
+        frame.destroy()
+        raise Exception
+
+    print('addr: '+face_addr == address)
+    
+    if face_addr != address:
+        global face_capture
+        os.remove(img_name)
+        os.rmdir(os.getcwd()+'/img')
+        face_capture = capture
+        raise WrongFaceException
+
+    print('face addr: '+face_addr)
 
     url = 'http://192.168.0.19:8080/ipfs/'
     files = open(img_name, 'rb')
@@ -259,31 +399,7 @@ def getPicture(canvas, frame):
         'type': 'allowed'
     }
 
-    jsonMeta = json.dumps(metadata, indent = 3)
-    print(jsonMeta)
-    res = requests.post(url, json=jsonMeta)
-    response = res.headers['Ipfs-Hash']
-    print(response)
-
-    frame.destroy()
-    loading = loadingPage()
-    createLog(loading)
-
-
-def createLog(loading):
-    global address
-    global privateKey
-
-    tx = log_contract.functions.safeMint(address, response).buildTransaction({'nonce': w3.eth.getTransactionCount(address), 'gasPrice': w3.eth.gas_price});
-
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key=privateKey)
-
-    w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-
-    address, privateKey = None, None
-
-    loading.destroy()
-    mainPage()
+    createLog(metadata, frame)
 
 def main():
     if os.path.exists(os.getcwd()+'/db/') == False:

@@ -21,7 +21,8 @@ contract_json = json.load(open('contracts/UserToken.sol/UserToken.json'))
 contract = w3.eth.contract(address=USER_CONTRACT_ADDR, abi=contract_json['abi'])
 
 def checkUsers():
-    if len(next(os.walk('db'))[1]) < contract.functions.totalSupply().call():
+    total_user = contract.functions.totalSupply().call()
+    if len(next(os.walk('db'))[1]) < total_user:
         for i in range(0, total_user):
             user_address = contract.functions.ownerOf(i).call()
             user_path = os.getcwd()+'/db/'+user_address
@@ -29,6 +30,7 @@ def checkUsers():
                 os.makedirs(user_path)
                 uri = contract.functions.tokenURI(i).call()
                 getFile(uri, user_path)
+        os.remove(os.getcwd()+'/db/representations_vgg_face.pkl')
 
 def getUsers():
     os.makedirs(os.getcwd()+'/db') 
@@ -54,8 +56,8 @@ def getFile(path, image_path):
         with open(image_path+'/'+str(index)+'.jpg', 'wb') as file:
             file.write(result.content)
         index = index + 1
-    if os.path.exists('db/representations_vgg_face.pkl'):
-        os.remove('db/representations_vgg_face.pkl') 
+    if os.path.exists(os.getcwd()+'/db/representations_vgg_face.pkl'):
+        os.remove(os.getcwd()+'db/representations_vgg_face.pkl') 
 
 def handle_event(event):
     img_path = os.getcwd()+'/db/'+event.args.to   
