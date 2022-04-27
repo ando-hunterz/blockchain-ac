@@ -3,6 +3,7 @@ import { keccak256 } from "ethers/lib/utils";
 import { makeJsonObject } from "./file";
 import { addFile } from "./ipfs";
 
+
 const createUserHash = (firstName, lastName) => {
   return (
     firstName.toUpperCase() +
@@ -51,4 +52,4 @@ const createMetadata = async (account, jsonKeyURI, user) => {
       return await addFile(jsonURI);
 }
 
-export { createEnumUserHash, createUserHash, createKeystore, createMetadata };
+export { createEnumUserHash, createUserHash, createKeystore, createMetadata};

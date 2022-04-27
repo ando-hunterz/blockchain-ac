@@ -56,4 +56,26 @@ const getImageFile = async (path) => {
   return URL.createObjectURL(new Blob([imageChunk], { type: "image/jpeg" }));
 };
 
-export { addFile, uploadPhotos, getJsonFile, getImageFile };
+const getFile = async (path) => {
+  if (ipfsNode == undefined) await connectIpfsNode();
+  let chunks = [];
+  for await (const chunk of ipfsNode.cat(path)) {
+    chunks.push(chunk)
+  }
+  // Get the total length of all arrays.
+  let length = 0;
+  chunks.forEach(item => {
+    length += item.length;
+  });
+
+  // Create a new array with total length and merge all source arrays.
+  let textChunk = new Uint8Array(length);
+  let offset = 0;
+  chunks.forEach(item => {
+    textChunk.set(item, offset);
+    offset += item.length;
+  });
+  return new TextDecoder().decode(textChunk)
+};
+
+export { addFile, uploadPhotos, getJsonFile, getImageFile, getFile };

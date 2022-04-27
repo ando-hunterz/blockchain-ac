@@ -2,7 +2,7 @@
 import { reactive, ref } from "@vue/reactivity";
 import QRCode from "qrcode";
 import { useCrypto } from "../stores/crypto";
-import { getJsonFile } from "../utils/ipfs";
+import { getFile, getJsonFile } from "../utils/ipfs";
 import { Wallet } from "@ethersproject/wallet";
 import { keccak256 } from "@ethersproject/keccak256";
 import { utils } from "ethers";
@@ -11,6 +11,7 @@ import NavBar from "./NavBar.vue";
 import { onBeforeMount } from "@vue/runtime-core";
 import { useNavigation } from "../stores/navigation";
 import { EyeIcon } from "@heroicons/vue/solid";
+import {pki} from 'node-forge'
 
 const qr = ref(null);
 
@@ -35,6 +36,7 @@ const state = reactive({
     newPassword: "password",
     confirmPassword: "password",
   },
+  lowFunds: false
 });
 
 const crypto = useCrypto();
@@ -61,7 +63,11 @@ const getQr = async () => {
     const keystore = await getJsonFile(state.account.keystore);
     const password = keccak256(utils.toUtf8Bytes(state.password));
     const wallet = await Wallet.fromEncryptedJson(keystore, password);
-    await generateQR(wallet.address + "-" + wallet.privateKey);
+    const publicPem = await getFile(import.meta.env.VITE_PUBLICKEY)
+    const publicKey = pki.publicKeyFromPem(publicPem)
+    const accountEncrypt = publicKey.encrypt(wallet.address + "-" + wallet.privateKey)
+    console.log(accountEncrypt)
+    await generateQR(accountEncrypt);
     state.logged = true;
     state.password = null;
     navigation.clearLoading();
@@ -99,7 +105,8 @@ const changePassword = async () => {
       wallet.address,
       0
     );
-    await crypto.contract.updatePassword(tokenId, metadataURI);
+    const updateTx = await crypto.contract.updatePassword(tokenId, metadataURI);
+    await updateTx.wait()
     navigation.clearLoading();
     navigation.addAlert({message: "Password Changed", type: "Success"})
     state.account = await getDetails();
@@ -116,12 +123,20 @@ const resetKey = () => {
 
 onBeforeMount(async () => {
   state.account = await getDetails();
-  console.log(state.account != undefined)
+  console.log('balance')
+  const balance = utils.formatEther(await crypto.provider.getBalance(await crypto.signer.getAddress()))
+  if (balance < 1) state.lowFunds = true
+  
 });
 </script>
 
 <template>
   <nav-bar>
+    <div v-if="state.lowFunds"
+      class="w-full bg-red-400 rounded-md text-xl text-center px-4 py-6 drop-shadow mb-4"
+    >
+      <span class="text-white">Balance is Low, access maybe unavailable, please contact admin to add Funds</span> 👋
+    </div>
     <div
       class="w-full bg-white rounded-md text-xl text-center px-4 py-6 drop-shadow"
     >

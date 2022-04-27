@@ -1,5 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
-
+require("dotenv").config
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -17,13 +17,17 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  defaultNetwork: "ganache",
+  defaultNetwork: "local",
   networks: {
     hardhat: {
     },
     ganache: {
       url: "http://192.168.0.19:7545",
       chainId: 1337,
+    },
+    local: {
+      url: `${process.env.PROVIDER_ADDR}`,
+      chainId: 51,
     }
   },
   solidity: "0.8.4",

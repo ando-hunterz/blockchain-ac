@@ -40,7 +40,7 @@ onBeforeMount(async () => {
     await connectLogContract(crypto);
   }
   const logCount = await crypto.logContract.totalSupply();
-  for (let i = logCount - 1; i >= logCount - 3; i--) {
+  for (let i = logCount - 1;i >= 0 && i>= logCount - 3; i--) {
     const owner = await crypto.logContract.ownerOf(i);
     const uri = await crypto.logContract.tokenURI(i);
     const jsonUri = await getJsonFile(uri);

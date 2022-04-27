@@ -27,10 +27,11 @@ const state = reactive({
 const disableUser = async (address, index) => {
   try {
     navigation.setLoading();
-    await crypto.contract.grantRole(
+    const tx = await crypto.contract.grantRole(
       import.meta.env.VITE_DISABLED_ROLE,
       address
     );
+    await tx.wait()
     state.users[index].disabled = true;
     navigation.clearLoading();
     navigation.addAlert({ message: "User disabled", type: "Success" });
@@ -43,10 +44,11 @@ const disableUser = async (address, index) => {
 const enableUser = async (address, index) => {
   try {
     navigation.setLoading();
-    await crypto.contract.revokeRole(
+    const tx = await crypto.contract.revokeRole(
       import.meta.env.VITE_DISABLED_ROLE,
       address
     );
+    await tx.wait()
     state.users[index].disabled = false;
     navigation.clearLoading();
     navigation.addAlert({ message: "User enabled", type: "Success" });
