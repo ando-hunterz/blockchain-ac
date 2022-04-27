@@ -17,10 +17,13 @@ from custom_exception import DisabledException, WrongFaceException, FaceTimeout,
 
 load_dotenv()
 
-w3 = Web3(Web3.HTTPProvider('http://192.168.0.19:7545'))
 LOG_CONTRACT_ADDR=os.getenv('LOG_CONTRACT_ADDR')
 USER_CONTRACT_ADDR=os.getenv('USER_CONTRACT_ADDR')
 DISABLED_ROLE=os.getenv('DISABLED_ROLE')
+PROVIDER_ADDR=os.getenv('PROVIDER_ADDR')
+IPFS_ADDR=os.getenv('IPFS_ADDR')+'/ipfs/'
+
+w3 = Web3(Web3.HTTPProvider(PROVIDER_ADDR))
 
 log_json = open('/home/pi/blockchain-ac/node/contracts/LogToken.sol/LogToken.json')
 user_json = open('/home/pi/blockchain-ac/node/contracts/UserToken.sol/UserToken.json')
@@ -100,10 +103,14 @@ def createLog(metadata, page):
         global address
         global privateKey
 
-        tx = log_contract.functions.safeMint(address, response).buildTransaction({'nonce': w3.eth.getTransactionCount(address), 'gasPrice': w3.eth.gas_price});
+        tx = log_contract.functions.safeMint(address, response).buildTransaction({'nonce': w3.eth.getTransactionCount(address), 'gasPrice': w3.eth.gas_price, 'chainId': 51, 'from': address, "gas": 0});
+
+        gas = w3.eth.estimate_gas(tx)
+        print(gas)
+        tx.update({'gas': gas})
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=privateKey)
-
+ 
         w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
         address, privateKey = None, None
@@ -111,7 +118,7 @@ def createLog(metadata, page):
         loading.destroy()
         mainPage()
 
-    url = 'http://192.168.0.19:8080/ipfs/'
+    url = IPFS_ADDR
     print(metadata)
     jsonMeta = json.dumps(metadata, indent = 3)
     print(jsonMeta)
@@ -145,7 +152,7 @@ def getPhoto():
     cam.release()
 
 
-    url = 'http://192.168.0.19:8080/ipfs/'
+    url = IPFS_ADDR
     files = open(img_name, 'rb')
     r = requests.post(url, data=files)
     response = r.headers['Ipfs-Hash']
@@ -289,7 +296,7 @@ def getAccount(canvas, page):
         img_name = 'img/{}.jpg'.format(timestamp)
         res = cv2.imwrite(img_name, face_capture)
 
-        url = 'http://192.168.0.19:8080/ipfs/'
+        url = IPFS_ADDR
         files = open(img_name, 'rb')
         r = requests.post(url, data=files)
         response = r.headers['Ipfs-Hash']
@@ -421,7 +428,7 @@ def getPicture(canvas, frame):
 
     print('face addr: '+face_addr)
 
-    url = 'http://192.168.0.19:8080/ipfs/'
+    url = IPFS_ADDR
     files = open(img_name, 'rb')
     r = requests.post(url, data=files)
     response = r.headers['Ipfs-Hash']

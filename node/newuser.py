@@ -13,8 +13,11 @@ load_dotenv()
 print(os.getcwd())
 
 USER_CONTRACT_ADDR=os.getenv('USER_CONTRACT_ADDR')
+PROVIDER_ADDR=os.getenv('PROVIDER_ADDR')
+IPFS_ADDR=os.getenv('IPFS_ADDR')+'/ipfs/'
+
 print(USER_CONTRACT_ADDR)
-w3 = Web3(Web3.HTTPProvider('http://192.168.0.19:7545'))
+w3 = Web3(Web3.HTTPProvider(PROVIDER_ADDR))
 
 contract_json = json.load(open('contracts/UserToken.sol/UserToken.json'))
 
@@ -46,13 +49,13 @@ def getUsers():
         getFile(uri, user_path)
 
 def getFile(path, image_path):
-    res = requests.get('http://192.168.0.19:8080/ipfs/'+path)
+    res = requests.get(IPFS_ADDR+path)
     res_content = res.content.decode()
     res_dict = json.loads(res_content)
     index = 1
     for hash in res_dict['photo']:
         print(hash)
-        result = requests.get('http://192.168.0.19:8080/ipfs/'+hash)
+        result = requests.get(IPFS_ADDR+hash)
         with open(image_path+'/'+str(index)+'.jpg', 'wb') as file:
             file.write(result.content)
         index = index + 1
