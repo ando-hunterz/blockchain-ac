@@ -54,7 +54,7 @@ async function main() {
   await signedTx.wait()
 
   console.log('Create env file')
-  const keypair = forge.pki.rsa.generateKeyPair({bits: 2048, workers: 2});
+  const keypair = forge.pki.rsa.generateKeyPair({bits: 1024, workers: 2});
   const privatePem = forge.pki.privateKeyToPem(keypair.privateKey)
   const publicPem = forge.pki.publicKeyToPem(keypair.publicKey)
   

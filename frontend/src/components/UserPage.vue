@@ -11,7 +11,7 @@ import NavBar from "./NavBar.vue";
 import { onBeforeMount } from "@vue/runtime-core";
 import { useNavigation } from "../stores/navigation";
 import { EyeIcon } from "@heroicons/vue/solid";
-import {pki} from 'node-forge'
+import {pki, util} from 'node-forge'
 
 const qr = ref(null);
 
@@ -65,9 +65,9 @@ const getQr = async () => {
     const wallet = await Wallet.fromEncryptedJson(keystore, password);
     const publicPem = await getFile(import.meta.env.VITE_PUBLICKEY)
     const publicKey = pki.publicKeyFromPem(publicPem)
-    const accountEncrypt = publicKey.encrypt(wallet.address + "-" + wallet.privateKey)
-    console.log(accountEncrypt)
-    await generateQR(accountEncrypt);
+    const accountEncrypt = publicKey.encrypt(wallet.privateKey, 'RSA-OAEP')
+    const digest = util.encode64(accountEncrypt)
+    await generateQR(util.encode64(accountEncrypt));
     state.logged = true;
     state.password = null;
     navigation.clearLoading();
