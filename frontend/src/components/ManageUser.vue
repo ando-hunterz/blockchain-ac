@@ -91,11 +91,8 @@ const changePage = async (page) => {
   await getUser((page + 1) * 10);
 };
 
-const border = (index) => {
-  if (index == 0) return { "rounded-l-md": true, "border-r": true };
-  if (index == state.page.length - 1)
-    return { "rounded-r-md": true, "border-l": true };
-  return { "border-x": true };
+const pushNewUser = (user) => {
+  state.users.push(user);
 };
 
 onBeforeMount(async () => {
@@ -116,6 +113,7 @@ onBeforeMount(async () => {
       <add-user
         v-if="modals.addUser"
         @user-modal-closed="modals.addUser = false"
+        @user-added="pushNewUser"
       ></add-user>
       <button
         v-if="!modals.isMobile"
@@ -161,19 +159,18 @@ onBeforeMount(async () => {
           </div>
           <user-dropdown v-if="user.showDropdown" :user="user"></user-dropdown>
         </div>
+        <div class="flex flex-row mt-2">
+          <div v-for="(page, index) in state.page" :key="index">
+            <button
+              class="bg-blue-400 px-2 text-white"
+              @click="changePage(index)"
+            >
+              {{ page }}
+            </button>
+          </div>
+        </div>
       </div>
       <div v-else>No User Found</div>
-    </div>
-    <div class="flex flex-row mt-2">
-      <div v-for="(page, index) in state.page" :key="index">
-        <button
-          :class="border(index)"
-          class="bg-blue-400 px-2 text-white"
-          @click="changePage(index)"
-        >
-          {{ page }}
-        </button>
-      </div>
     </div>
   </nav-bar>
 </template>

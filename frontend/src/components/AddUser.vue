@@ -21,7 +21,7 @@ const crypto = useCrypto();
 const navigation = useNavigation();
 
 // eslint-disable-next-line no-undef
-const emits = defineEmits(["user-modal-closed"]);
+const emits = defineEmits(["user-modal-closed", "user-added"]);
 
 const form = reactive({
   firstName: null,
@@ -123,6 +123,15 @@ const saveUser = async () => {
       jsonKeyURI
     );
     navigation.clearLoading();
+    const newUser = {
+      address: account.address,
+      photo: photoUrl,
+      name: name,
+      showDropdown: false,
+      disabled: false,
+      keystore: jsonKeyURI
+    }
+    emits("user-added", newUser);
     emits("user-modal-closed");
   } catch (e) {
     navigation.clearLoading();

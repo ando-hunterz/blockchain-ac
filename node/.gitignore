@@ -1,3 +1,6 @@
 contracts
 img
 .env
+db
+__pycache__
+pi-configuration/vgg_face_weights.h5
