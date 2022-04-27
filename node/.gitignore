@@ -4,3 +4,4 @@ img
 db
 __pycache__
 pi-configuration/vgg_face_weights.h5
+privateKey.pem

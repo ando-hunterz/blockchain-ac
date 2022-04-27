@@ -14,6 +14,9 @@ import facerecog
 import newuser
 from wrapt_timeout_decorator import *
 from custom_exception import DisabledException, WrongFaceException, FaceTimeout, UnregisteredQRError
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from base64 import b64decode
 
 load_dotenv()
 
@@ -33,6 +36,8 @@ user_abi = json.load(user_json)
 
 log_contract = w3.eth.contract(address=LOG_CONTRACT_ADDR,abi=log_abi['abi'])
 user_contract = w3.eth.contract(address=USER_CONTRACT_ADDR,abi=user_abi['abi'])
+
+detector = cv2.wechat_qrcode_WeChatQRCode(os.getcwd()+'/pi-configuration/detect.prototxt',os.getcwd()+'/pi-configuration/detect.caffemodel',os.getcwd()+'/pi-configuration/sr.prototxt',os.getcwd()+'/pi-configuration/sr.caffemodel')
 
 root = tk.Tk()
 root.attributes('-fullscreen',True)
@@ -111,7 +116,9 @@ def createLog(metadata, page):
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=privateKey)
  
-        w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        sent_tx = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        
+        w3.eth.wait_for_transaction_receipt(sent_tx)
 
         address, privateKey = None, None
 
@@ -174,7 +181,6 @@ def getAccount(canvas, page):
         decodedObjects = pyzbar.decode(im)
         return decodedObjects
 
-    @timeout(30)
     def getImage(cap):
         while(cap.isOpened()):
             # Capture frame-by-frame
@@ -182,11 +188,12 @@ def getAccount(canvas, page):
             # Our operations on the frame come here
             im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             update_image(frame, canvas)
-
+            
             decodedObjects = decode(im)
 
-            if len(decodedObjects) == 1:
+            if len(decodedObjects) > 0:
                 return decodedObjects
+
 
     def decodeAddress(decodedObjects):
         global address
@@ -199,9 +206,17 @@ def getAccount(canvas, page):
         print(decodedObjects[0].data)
 
         # When everything done, release the capture
-        try: 
-            (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
-        except:
+        try:
+            privateKeyPem = open(os.getcwd()+'/privateKey.pem')
+            privateKey = RSA.importKey(privateKeyPem.read())
+            cipher = PKCS1_OAEP.new(privateKey)
+            raw_cipher_data = b64decode(decodedObjects[0].data)
+            privateKey = (cipher.decrypt(raw_cipher_data)).decode("utf-8")
+            account = w3.eth.account.privateKeyToAccount(Web3.toBytes(hexstr=privateKey))
+            address = account.address
+            print(address)
+        except Exception as e:
+            print(e)
             raise UnregisteredQRError
 
         if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
