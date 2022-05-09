@@ -5,33 +5,36 @@ import globals from "rollup-plugin-node-globals";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [vue()],
+export default defineConfig((command, mode) => {
+  return {
+    base: mode == 'production' ? "" : "",
+    plugins: [vue()],
 
-  optimizeDeps: {
-    exclude: ["electron-fetch"],
-    esbuildOptions: {
-      // Node.js global to browser globalThis
-      define: {
-        global: "globalThis",
+    optimizeDeps: {
+      exclude: ["electron-fetch"],
+      esbuildOptions: {
+        // Node.js global to browser globalThis
+        define: {
+          global: "globalThis",
+        },
+        // Enable esbuild polyfill plugins
+        plugins: [
+          NodeGlobalsPolyfillPlugin({
+            buffer: true,
+          }),
+        ],
       },
-      // Enable esbuild polyfill plugins
-      plugins: [
-        NodeGlobalsPolyfillPlugin({
-          buffer: true,
-        }),
-      ],
     },
-  },
-  build: {
-    commonjsOptions: {
-      transformMixedEsModules: true,
+    build: {
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
+      rollupOptions: {
+        // output: {
+        //   intro: 'const global = window'
+        // },
+        plugins: [],
+      },
     },
-    rollupOptions: {
-      // output: {
-      //   intro: 'const global = window'
-      // },
-      plugins: [],
-    },
-  },
+  };
 });

@@ -77,6 +77,7 @@ const getUser = async (max) => {
     const address = await crypto.contract.getUser(index);
     console.log(index);
     const details = await crypto.contract.getUserInfo(address);
+    console.log(details)
     console.log(await getJsonFile(details));
     state.users.push(await getJsonFile(details));
     state.users[index].address = address;

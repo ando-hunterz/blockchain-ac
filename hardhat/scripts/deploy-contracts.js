@@ -17,7 +17,8 @@ async function main() {
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   // await hre.run('compile');
-  console.log('Begin contract deployment') 
+  console.log('Begin contract deployment')
+  console.log(`${process.env.PROVIDER_ADDR}`)
   const provider = new hre.ethers.providers.JsonRpcProvider(`${process.env.PROVIDER_ADDR}`)
   // We get the contract to deploy
   const keystore = fs.readFileSync(`${process.cwd()}/config/blockchain/keystore`)
