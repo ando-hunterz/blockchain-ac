@@ -60,21 +60,22 @@ def getFile(path, image_path):
             file.write(result.content)
         index = index + 1
     if os.path.exists(os.getcwd()+'/db/representations_vgg_face.pkl'):
-        os.remove(os.getcwd()+'db/representations_vgg_face.pkl') 
+        os.remove(os.getcwd()+'/db/representations_vgg_face.pkl') 
 
 def handle_event(event):
     img_path = os.getcwd()+'/db/'+event.args.to   
-    os.mkdir(img_path)
-    path = contract.functions.tokenURI(event.args.tokenId).call()
-    getFile(path, img_path)
+    if os.path.exists(img_path) == False:
+        os.mkdir(img_path)
+        path = contract.functions.tokenURI(event.args.tokenId).call()
+        getFile(path, img_path)
 
-def log_loop(event_filter, pool_interval):
+def log_loop():
     while True:
-        for event in event_filter.get_new_entries():
+        for event in contract.events.userMint.getLogs(fromBlock='latest'):
+            print('new user found')
             handle_event(event)
-        time.sleep(pool_interval)
+        time.sleep(2)
 
 def listenNewUser():
-    block_filter = contract.events.userMint.createFilter(fromBlock='latest')
-    worker = Thread(target=log_loop, args=(block_filter, 2), daemon=True)
+    worker = Thread(target=log_loop, daemon=True)
     worker.start()

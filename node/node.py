@@ -17,6 +17,7 @@ from custom_exception import DisabledException, WrongFaceException, FaceTimeout,
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from base64 import b64decode
+import RPi.GPIO as GPIO
 
 load_dotenv()
 
@@ -37,8 +38,6 @@ user_abi = json.load(user_json)
 log_contract = w3.eth.contract(address=LOG_CONTRACT_ADDR,abi=log_abi['abi'])
 user_contract = w3.eth.contract(address=USER_CONTRACT_ADDR,abi=user_abi['abi'])
 
-detector = cv2.wechat_qrcode_WeChatQRCode(os.getcwd()+'/pi-configuration/detect.prototxt',os.getcwd()+'/pi-configuration/detect.caffemodel',os.getcwd()+'/pi-configuration/sr.prototxt',os.getcwd()+'/pi-configuration/sr.caffemodel')
-
 root = tk.Tk()
 root.attributes('-fullscreen',True)
 root.columnconfigure(0,weight=1)
@@ -46,6 +45,9 @@ root.rowconfigure(0,weight=1)
 
 unregister_tries = 0
 registered_tries = 0
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(26, GPIO.OUT)
 
 def mainPage():
     main_page = tk.Frame(root)
@@ -121,7 +123,11 @@ def createLog(metadata, page):
         w3.eth.wait_for_transaction_receipt(sent_tx)
 
         address, privateKey = None, None
-
+        
+        GPIO.output(26, GPIO.HIGH)
+        time.sleep(2)
+        GPIO.output(26, GPIO.LOW)
+        GPIO.cleanup()
         loading.destroy()
         mainPage()
 
