@@ -17,6 +17,7 @@ from custom_exception import DisabledException, WrongFaceException, FaceTimeout,
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from base64 import b64decode
+from logger import read_qr_log, finish_qr_log, read_face_log, finish_face_log, send_log_log, finish_log_log
 import RPi.GPIO as GPIO
 
 load_dotenv()
@@ -122,6 +123,8 @@ def createLog(metadata, page):
         
         w3.eth.wait_for_transaction_receipt(sent_tx)
 
+        finish_log_log()
+        
         address, privateKey = None, None
         
         GPIO.output(26, GPIO.HIGH)
@@ -130,7 +133,8 @@ def createLog(metadata, page):
         GPIO.cleanup()
         loading.destroy()
         mainPage()
-
+    
+    send_log_log()
     url = IPFS_ADDR
     print(metadata)
     jsonMeta = json.dumps(metadata, indent = 3)
@@ -178,6 +182,7 @@ def getAccount(canvas, page):
     global address
     global privateKey
 
+
     cap = cv2.VideoCapture(0)
 
     cap.set(3,640)
@@ -186,7 +191,10 @@ def getAccount(canvas, page):
     def decode(im) :
         decodedObjects = pyzbar.decode(im)
         return decodedObjects
+    
+    read_qr_log()
 
+    @timeout(60, timeout_exception=TimeoutError)
     def getImage(cap):
         while(cap.isOpened()):
             # Capture frame-by-frame
@@ -366,18 +374,18 @@ def getAccount(canvas, page):
     except TimeoutError:
         cap.release()
         cv2.destroyAllWindows() 
-        log_timeout()
+        global unregister_tries
+        unregister_tries += 1
+        if unregister_tries > 2:
+            log_unregister()
+            unregister_tries = 0
         page.destroy()
         mainPage()
     except Exception as e:
         print(e)
         cap.release()
         cv2.destroyAllWindows() 
-        global unregister_tries
-        unregister_tries += 1
-        if unregister_tries > 2:
-            log_unregister()
-            unregister_tries = 0
+        log_timeout()
         page.destroy()
         mainPage()
 
@@ -392,6 +400,8 @@ def getPicture(canvas, frame):
     time.sleep(2)
 
     cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    
+    read_face_log()
 
     @timeout(30)
     def getImage():
@@ -420,7 +430,7 @@ def getPicture(canvas, frame):
 
     cam.release()
     cv2.destroyAllWindows()
-    
+
     os.makedirs(os.getcwd()+'/img')
     timestamp = datetime.now().isoformat()
     img_name = 'img/{}.jpg'.format(timestamp)
@@ -448,6 +458,8 @@ def getPicture(canvas, frame):
         raise WrongFaceException
 
     print('face addr: '+face_addr)
+    
+    finish_face_log()
 
     url = IPFS_ADDR
     files = open(img_name, 'rb')

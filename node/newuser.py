@@ -33,7 +33,8 @@ def checkUsers():
                 os.makedirs(user_path)
                 uri = contract.functions.tokenURI(i).call()
                 getFile(uri, user_path)
-        os.remove(os.getcwd()+'/db/representations_vgg_face.pkl')
+        if os.path.exists(os.getcwd()+'/db/representations_vgg_face.pkl'):
+            os.remove(os.getcwd()+'/db/representations_vgg_face.pkl')
 
 def getUsers():
     os.makedirs(os.getcwd()+'/db') 
