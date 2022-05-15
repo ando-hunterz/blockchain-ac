@@ -66,10 +66,11 @@ async function main() {
   `VITE_LOG_CONTRACT_ADDR=${logToken.address}\n`+
   `VITE_DEFAULT_ADMIN_ROLE=0x0000000000000000000000000000000000000000000000000000000000000000\n`+
   `VITE_DISABLED_ROLE=0xa525cde1cb1016e83acdcf1bd75f317fb68bb72cf5721ac56f746ad8529dae99\n`+
-  `VITE_IPFS_ADDR=${process.env.IPFS_API_ADDR}\n`+
+  `VITE_IPFS_ADDR=${process.env.IPFS_GATEWAY_ADDR}\n`+
   `VITE_NODE_ADDR=${nodeAccount.address}\n`+
   `VITE_NOACCOUNT_ADDR=0x0000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFF\n`+
-  `VITE_PUBLICKEY=${result.headers["ipfs-hash"]}`
+  `VITE_PUBLICKEY=${result.headers["ipfs-hash"]}\n`+
+  `VITE_LOGGER_ADDR=${process.env.LOGGER_ADDR}`
 
    const nodeenv = 
   `USER_CONTRACT_ADDR=${userToken.address}\n`+
@@ -81,8 +82,9 @@ async function main() {
   `NODE_PRIVATE=${nodeAccount.privateKey}\n`+
   `NODE_ADDR=${nodeAccount.address}\n`+
   `NOACCOUNT_ADDR=0x0000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFF\n`+
-  `NODE_NAME=`
-  
+  `NODE_NAME=\n`+
+  `LOGGER_ADDR=${process.env.LOGGER_ADDR}`
+
   const directories = ['config/frontend', 'config/node']
 
   try {
