@@ -8,6 +8,7 @@ import UserContract from "../contracts/UserToken.sol/UserToken.json";
 import LogContract from '../contracts/LogToken.sol/LogToken.json'
 import { useCrypto } from "../stores/crypto";
 import { keccak256 } from "ethers/lib/utils";
+import router from "./router";
 
 const connectToBlockchain = async (crypto) => {
   await connectProvider(crypto);
@@ -27,7 +28,7 @@ const checkForProvider = () => {
 
 const connectProvider = async (crypto) => {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
-  console.log(provider);
+  console.log(await provider.ready);
   try {
     await provider.send("eth_requestAccounts", []);
     crypto.$patch({
@@ -35,7 +36,8 @@ const connectProvider = async (crypto) => {
     });
 
   } catch (e) {
-    window.alert(e);
+    window.alert("Network Might Be Error");
+    router.push('/404')
   }
 };
 
@@ -87,7 +89,8 @@ const isAdminRole = async (crypto, address) => {
       : "user";
       addEncryptedCookie("role", role, address);
   } catch (e) {
-    window.alert(e);
+    window.alert("Network Might Be Error");
+    router.push('/404')
   }
   
 };

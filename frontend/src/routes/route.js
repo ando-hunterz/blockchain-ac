@@ -3,6 +3,7 @@ import UserPage from "../components/UserPage.vue";
 import AdminPage from "../components/AdminPage.vue";
 import ManageUser from "../components/ManageUser.vue";
 import LogPage from '../components/LogAdminPage.vue';
+import NotFoundPage from '../components/NotFoundPage.vue';
 import { baseRouteTo, hasAdminRole, isLogin } from "../utils/router-helper";
 
 const routes = [
@@ -30,6 +31,11 @@ const routes = [
     component: LogPage,
     name: 'admin-log',
     beforeEnter: [hasAdminRole, isLogin],
+  },
+  {
+    path: "/:catchAll(.*)",
+    component: NotFoundPage,
+    name: "not-found"
   }
 ];
 

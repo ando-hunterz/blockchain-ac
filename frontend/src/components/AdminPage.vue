@@ -3,6 +3,7 @@ import { onBeforeMount, reactive } from "@vue/runtime-core";
 import { useCrypto } from "../stores/crypto";
 import { useNavigation } from "../stores/navigation";
 import { getJsonFile } from "../utils/ipfs";
+import { createAccount } from "../utils/logger";
 import { connectLogContract } from "../utils/web3";
 import NavBar from "./NavBar.vue";
 const crypto = useCrypto();

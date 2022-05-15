@@ -14,12 +14,21 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   const crypto = useCrypto();
+  console.log(to)
+  console.log(from)
+  if(to.path == '/404' || from.path == '/404') return
+  if(window.ethereum == undefined && from.path == '/') {
+    router.push("404")
+    return
+  }
   if (
+    window.ethereum && (
     crypto.provider == null ||
     crypto.signer == null ||
     crypto.contract == null
+    )
   ) {
     const provider = checkForProvider();
     if(!await window.ethereum._metamask.isUnlocked() && getCookie('crypto') != undefined) {

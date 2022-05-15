@@ -16,6 +16,7 @@ import {
 } from "../utils/account";
 import { downloadBlob } from "../utils/file";
 import { useNavigation } from "../stores/navigation";
+import { createAccount, accountCreated } from "../utils/logger"
 
 const crypto = useCrypto();
 const navigation = useNavigation();
@@ -67,6 +68,7 @@ watch(
 );
 
 const saveUser = async () => {
+  createAccount()
   error.photos = form.photos.length < 3 ? "Photo is insufficient" : null;
   if (error.photos != null) {
     navigation.addAlert({ message: error.photos, type: "Error" });
@@ -125,6 +127,7 @@ const saveUser = async () => {
       jsonKeyURI
     );
     await mintTx.wait()
+    accountCreated()
     navigation.clearLoading();
     const newUser = {
       address: account.address,
