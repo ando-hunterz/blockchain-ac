@@ -1,4 +1,4 @@
-import { ethers, utils } from "ethers";
+import { ethers } from "ethers";
 import {
   addCookie,
   addEncryptedCookie,
@@ -7,7 +7,6 @@ import {
 import UserContract from "../contracts/UserToken.sol/UserToken.json";
 import LogContract from '../contracts/LogToken.sol/LogToken.json'
 import { useCrypto } from "../stores/crypto";
-import { keccak256 } from "ethers/lib/utils";
 import router from "./router";
 
 const connectToBlockchain = async (crypto) => {

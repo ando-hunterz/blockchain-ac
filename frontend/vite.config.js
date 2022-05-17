@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import NodeGlobalsPolyfillPlugin from "@esbuild-plugins/node-globals-polyfill";
 import globals from "rollup-plugin-node-globals";
@@ -6,8 +6,9 @@ import { nodeResolve } from "@rollup/plugin-node-resolve";
 
 // https://vitejs.dev/config/
 export default defineConfig((command, mode) => {
+  process.env = {...process.env, ...loadEnv(mode, process.cwd())};
   return {
-    base: mode == 'production' ? "" : "",
+    base: mode == 'production' ? "" : process.env.VITE_IPNS_ADDR,
     plugins: [vue()],
 
     optimizeDeps: {
