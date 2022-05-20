@@ -5,10 +5,10 @@ import globals from "rollup-plugin-node-globals";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 
 // https://vitejs.dev/config/
-export default defineConfig((command, mode) => {
+export default defineConfig(({mode}) => {
   process.env = {...process.env, ...loadEnv(mode, process.cwd())};
   return {
-    base: mode == 'production' ? "" : process.env.VITE_IPNS_ADDR,
+    base: mode != 'production' ? "" : process.env.VITE_IPNS_ADDR,
     plugins: [vue()],
 
     optimizeDeps: {

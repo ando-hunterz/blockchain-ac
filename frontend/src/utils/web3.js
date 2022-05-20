@@ -20,6 +20,7 @@ const connectToBlockchain = async (crypto) => {
   }
   console.log('ho')
 };
+
 const checkForProvider = () => {
   if (window.ethereum == undefined) return false;
   return true;
