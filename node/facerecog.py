@@ -20,8 +20,9 @@ def findFace(file):
         
     df = DeepFace.find(img_path=file, db_path="./db")
     
-    print(df)
-    
+    if df.shape[0] == 0:
+        return None
+
     path = Path(df.iloc[0].identity)
 
     return path.parts[1]
