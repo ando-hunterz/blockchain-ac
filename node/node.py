@@ -96,7 +96,7 @@ def qrPage(main_page):
 def accessPage():
     access_page = tk.Frame(root)
     access_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-    access_label = tk.Label(access_page, text="Loading")
+    access_label = tk.Label(access_page, text="Access Granted! Please Enter")
     access_label.pack()
     access_page.tkraise()
     root.update()
@@ -144,7 +144,8 @@ def log_register():
         'photo': photo
     }
     
-    createLog(metadata, page)
+    createLog(metadata)
+
 
 def log_unregister():
     global address
@@ -165,7 +166,9 @@ def log_unregister():
     
     address = os.getenv('NODE_ADDR')
     privateKey = os.getenv('NODE_PRIVATE')
-    createLog(metadata, page)
+    
+    createLog(metadata)
+
 
 def log_timeout():
     global address
@@ -186,8 +189,9 @@ def log_timeout():
     
     address = os.getenv('NODE_ADDR')
     privateKey = os.getenv('NODE_PRIVATE')
-    createLog(metadata, page)
-
+    
+    createLog(metadata)
+    
 def log_wrong_address(capture):
     global address
     global privateKey
@@ -219,9 +223,8 @@ def log_wrong_address(capture):
     createLog(metadata)
 
 
-
-def allowedLog(metadata, page):
-    createLog(metadata, page)
+def allowedLog(metadata):
+    createLog(metadata)
     access_page = accessPage()
     GPIO.output(16, True)
     time.sleep(5)
@@ -229,7 +232,7 @@ def allowedLog(metadata, page):
     access_page.destroy()
     mainPage()
 
-def createLog(metadata, page=None):  
+def createLog(metadata):  
     
     global address
     global privateKey
@@ -240,9 +243,6 @@ def createLog(metadata, page=None):
     jsonMeta = json.dumps(metadata, indent = 3)
     res = requests.post(url, json=jsonMeta)
     response = res.headers['Ipfs-Hash']
-    
-    if page:
-        page.destroy()
     
     loading = loadingPage()
 
@@ -263,7 +263,7 @@ def createLog(metadata, page=None):
     address, privateKey = None, None
     
     loading.destroy()
-
+    
 
 def getPhoto():
 
@@ -311,7 +311,7 @@ def getAccount(canvas, page):
         return decodedObjects
     
 
-    @timeout(60, timeout_exception=TimeoutError)
+    @timeout(30, timeout_exception=TimeoutError)
     def getImage(cap):
         while(cap.isOpened()):
             ret, frame = cap.read()
@@ -385,14 +385,9 @@ def getAccount(canvas, page):
         if unregister_tries > 2:
             log_unregister()
             unregister_tries = 0
+            mainPage()
         else:
             mainPage()
-    except Exception as e:
-        repr(e)
-        cap.release()
-        cv2.destroyAllWindows() 
-        page.destroy()
-        
 
 def getPicture(canvas, frame):
     global response
@@ -436,12 +431,11 @@ def getPicture(canvas, frame):
         if registered_tries > 0:
             log_register()
             registered_tries = 0
+            mainPage()
         else:
             mainPage()
         registered_tries += 1
-    except Exception as e:
-        repr(e)
-        raise e 
+        return
 
     cam.release()
     cv2.destroyAllWindows()
@@ -464,23 +458,16 @@ def getPicture(canvas, frame):
         os.rmdir(os.getcwd()+'/img')
         loading.destroy()
         log_wrong_address(capture)
-    except Exception as e:
-        repr(e)
-        os.remove(img_name)
-        os.rmdir(os.getcwd()+'/img')
-        loading.destroy()
-        raise Exception
-    finally:
         mainPage()
-        return 
+        return
 
-    print('called')
     if face_addr != address or face_addr == None:
         os.remove(img_name)
         os.rmdir(os.getcwd()+'/img')
         loading.destroy()
         log_wrong_address(capture)
         mainPage()
+        return 
     
     finish_face_log()
 
@@ -501,7 +488,7 @@ def getPicture(canvas, frame):
 
     loading.destroy()
 
-    allowedLog(metadata, frame)
+    allowedLog(metadata)
 
 def main():
     loading = loadingPage()
@@ -523,15 +510,19 @@ if __name__ == '__main__':
         GPIO.cleanup()
     except requests.exceptions.HTTPError:
         print('Network Error')
-        error_page = errorPage(root)
+        error_page = errorPage()
         time.sleep(10)
         error_page.destroy()
         os.execl(sys.executable, sys.executable, *sys.argv)
     except requests.exceptions.ReadTimeout:
-        error_page = errorPage(root)
+        error_page = errorPage()
         print('Network Error')
         time.sleep(10)
         error_page.destroy()
         os.execl(sys.executable, sys.executable, *sys.argv)
     except Exception as e:
+        if os.path.exists(os.getcwd()+'/img/'):
+            shutil.rmtree(os.getcwd()+'/img')
         print(repr(e))
+    finally:
+        exit()
