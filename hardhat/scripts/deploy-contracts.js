@@ -11,19 +11,21 @@ require('dotenv').config()
 
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+  //await hre.run('compile');
+
+  try{
+     const res = await axios.post(`${process.env.LOGGER_ADDR}/contract.deployment`, {"status": "begin contract deployment"})
+  } catch (e) {
+     console.log(e)
+  }
+
   console.log('Begin contract deployment')
   console.log(`${process.env.PROVIDER_ADDR}`)
   const provider = new hre.ethers.providers.JsonRpcProvider(`${process.env.PROVIDER_ADDR}`)
-  // We get the contract to deploy
+ 
   const keystore = fs.readFileSync(`${process.cwd()}/config/blockchain/keystore`)
   console.log('Reading admin account')
-  const signer = await hre.ethers.Wallet.fromEncryptedJson(keystore,'andodo')
+  const signer = await hre.ethers.Wallet.fromEncryptedJson(keystore,`${process.env.PASSWORD}`)
   const signers = signer.connect(provider)
   const signerAddress = await signers.getAddress()
   console.log("Deploying UserToken")
@@ -70,7 +72,8 @@ async function main() {
   `VITE_NODE_ADDR=${nodeAccount.address}\n`+
   `VITE_NOACCOUNT_ADDR=0x0000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFF\n`+
   `VITE_PUBLICKEY=${result.headers["ipfs-hash"]}\n`+
-  `VITE_LOGGER_ADDR=${process.env.LOGGER_ADDR}`
+  `VITE_LOGGER_ADDR=${process.env.LOGGER_ADDR}\n`+
+  `VITE_IPNS_ADDR=${process.env.IPNS_ADDR}`
 
    const nodeenv = 
   `USER_CONTRACT_ADDR=${userToken.address}\n`+
@@ -83,9 +86,11 @@ async function main() {
   `NODE_ADDR=${nodeAccount.address}\n`+
   `NOACCOUNT_ADDR=0x0000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFF\n`+
   `NODE_NAME=\n`+
-  `LOGGER_ADDR=${process.env.LOGGER_ADDR}`
+  `LOGGER_ADDR=${process.env.LOGGER_ADDR}\n`+
+  `CHAIN_ID=${process.env.CHAIN_ID}`
 
   const directories = ['config/frontend', 'config/node']
+  
 
   try {
     for(const dir of directories){
@@ -95,7 +100,9 @@ async function main() {
     }
     fs.writeFileSync('config/frontend/.env', frontendenv)
     fs.writeFileSync('config/node/.env', nodeenv)
-    fs.writeFileSync('config/node/privateKey.pem',privatePem)
+    fs.writeFileSync('config/node/privateKey.pem',privatePem)	
+
+    await axios.post(`${process.env.LOGGER_ADDR}/contract.deployment`, {"status": "contract deployed"})
   } catch (err) {
     console.error(err)
   }

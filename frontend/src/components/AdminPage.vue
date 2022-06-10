@@ -30,6 +30,7 @@ const bgColor = (status) => {
     wrong_face: "bg-red-400",
     disabled: "bg-yellow-400",
     QR_mismatch: "bg-red-400",
+    face_timeout: "bg-red-400",  
   };
   return statusBg[status];
 };

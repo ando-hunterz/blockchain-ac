@@ -22,6 +22,8 @@ if (window.ethereum) {
     if (account.length < 1) removeCookies("crypto");
     routeTo("");
   });
+} else {
+  routeTo('404')
 }
 
 window.addEventListener("beforeunload", () => {

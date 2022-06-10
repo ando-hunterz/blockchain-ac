@@ -59,7 +59,7 @@ const getDetails = async () => {
 };
 
 const getQr = async () => {
-  qrGeneration()
+  await qrGeneration()
   navigation.setLoading();
   try {
     const keystore = await getJsonFile(state.account.keystore);
@@ -72,7 +72,7 @@ const getQr = async () => {
     state.logged = true;
     state.password = null;
     navigation.clearLoading();
-    qrGenerated()
+    await qrGenerated()
   } catch (e) {
     navigation.addAlert({ message: e.message, type: "Error" });
     navigation.clearLoading();

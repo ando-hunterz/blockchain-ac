@@ -97,7 +97,8 @@ const bgColor = (status) => {
     timeout: "bg-red-400",
     wrong_face: "bg-red-400",
     disabled: "bg-yellow-400",
-    QR_mismatch: "bg-red-400"
+    QR_mismatch: "bg-red-400",
+    face_timeout: "bg-red-400",
   };
   return statusBg[status];
 };
@@ -114,9 +115,10 @@ const getReason = (type) => {
   const statusReason = {
     unallowed: "Unregistered",
     QR_mismatch: "QR is not recognized",
-    timeout: "QR/Face not detected within 30s",
+    timeout: "QR not detected within 30s",
     wrong_face: "QR Code address and face mismatch",
     disabled: "User is disabled",
+    face_timeout: "Face not detected within 30s",
   };
   return statusReason[type];
 }

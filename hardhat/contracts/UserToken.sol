@@ -86,10 +86,6 @@ contract UserToken is ERC721, ERC721Enumerable, ERC721URIStorage, AccessControlE
        return tokenURI(tokenId);
     }
 
-    function updateUserBalance(address payable _to) public payable onlyRole(MINTER_ROLE) {
-        _to.transfer(msg.value);
-    }
-
     function updateUser(bytes32 _hash, string memory uri, uint256 tokenId) public onlyRole(MINTER_ROLE) {
         userHash.push(_hash);
         hasUser[_hash] = true;
