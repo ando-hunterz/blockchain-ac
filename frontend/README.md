@@ -1,7 +1,32 @@
-# Vue 3 + Vite
+# Frontend 🖼
+Frontend system of Blockchain Access Control
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## Tech Stack 👩‍💻
+**Vue 3 with Vite**
 
-## Recommended IDE Setup
+## Library Used 📚
+- heroicons
+- node-forge
+- ethers
+- nodenv
+- axios
+- pinia
+- qrcode
+- vue-router
+- ua-parser
+  
+## How to use 🛠
+- Run  
+  ```bash
+  npm run install
+  ```
+- For development purposes, use `ganache` as local Blockchain
+- Run
+  ```bash
+  npm run dev
+  ```
+  to begin development server
 
-- [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)
+## Work in Progress 👷‍♂️
+- Refactor code to enable clean coding
+- Generate Dockerfile with docker-compose to enable docker development enviroment 
