@@ -1,19 +1,25 @@
 from web3 import Web3
 import cv2
 import os
+import sys
 from dotenv import load_dotenv
 import json
 import time
 import pyzbar.pyzbar as pyzbar
 from datetime import datetime, timezone
 import requests
-import socket
 import tkinter as tk
 from PIL import Image, ImageTk
 import facerecog
 import newuser
 from wrapt_timeout_decorator import *
 from custom_exception import DisabledException, WrongFaceException, FaceTimeout, UnregisteredQRError
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from base64 import b64decode
+from logger import read_qr_log, finish_qr_log, read_face_log, finish_face_log, send_log_log, finish_log_log
+import RPi.GPIO as GPIO
+import shutil
 
 load_dotenv()
 
@@ -42,6 +48,18 @@ root.rowconfigure(0,weight=1)
 unregister_tries = 0
 registered_tries = 0
 
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(16, GPIO.OUT)
+
+def errorPage():
+    error_page = tk.Frame(root)
+    error_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+    error_label = tk.Label(error_page, text="Network Error, please contact admin or wait")
+    error_label.pack()
+    error_page.tkraise()
+    root.update()
+    return error_page
+
 def mainPage():
     main_page = tk.Frame(root)
     main_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
@@ -49,6 +67,15 @@ def mainPage():
     enter_button.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
     enter_button.pack()
     main_page.tkraise()
+
+def loadingPage():
+    loading_page = tk.Frame(root)
+    loading_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+    loading_label = tk.Label(loading_page, text="Loading")
+    loading_label.pack()
+    loading_page.tkraise()
+    root.update()
+    return loading_page
 
 def qrPage(main_page):
     main_page.destroy()
@@ -65,14 +92,15 @@ def qrPage(main_page):
     loading.destroy()
     getAccount(qr_canvas, qr_page)
 
-def loadingPage():
-    loading_page = tk.Frame(root)
-    loading_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-    loading_label = tk.Label(loading_page, text="Loading")
-    loading_label.pack()
-    loading_page.tkraise()
+
+def accessPage():
+    access_page = tk.Frame(root)
+    access_page.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+    access_label = tk.Label(access_page, text="Access Granted! Please Enter")
+    access_label.pack()
+    access_page.tkraise()
     root.update()
-    return loading_page
+    return access_page
 
 def picturePage():
     loading = loadingPage()
@@ -98,36 +126,144 @@ def update_image(p_frame, canvas):
     canvas.configure(image=canvas_im)
     root.update()
 
-def createLog(metadata, page):  
-    def sendLog(loading, response):
-        global address
-        global privateKey
 
-        tx = log_contract.functions.safeMint(address, response).buildTransaction({'nonce': w3.eth.getTransactionCount(address), 'gasPrice': w3.eth.gas_price, 'chainId': 51, 'from': address, "gas": 0});
+def log_register():
+    global address
+    global privateKey
+    global response
+    
+    photo = getPhoto()
 
-        gas = w3.eth.estimate_gas(tx)
-        print(gas)
-        tx.update({'gas': gas})
+    timestamp = datetime.now().isoformat()
+    
+    metadata = {
+        'name': address,
+        'location': os.getenv('NODE_NAME'),
+        'time': timestamp,
+        'type': 'face_timeout',
+        'photo': photo
+    }
+    
+    createLog(metadata)
 
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key=privateKey)
- 
-        w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
-        address, privateKey = None, None
+def log_unregister():
+    global address
+    global privateKey
+    global response
+    
+    photo = getPhoto()
 
-        loading.destroy()
-        mainPage()
+    timestamp = datetime.now().isoformat()
+    
+    metadata = {
+        'name': os.getenv('NOACCOUNT_ADDR'),
+        'location': os.getenv('NODE_NAME'),
+        'time': timestamp,
+        'type': 'QR_mismatch',
+        'photo': photo
+    }
+    
+    address = os.getenv('NODE_ADDR')
+    privateKey = os.getenv('NODE_PRIVATE')
+    
+    createLog(metadata)
+
+
+def log_timeout():
+    global address
+    global privateKey
+    global response
+    
+    photo = getPhoto()
+
+    timestamp = datetime.now().isoformat()
+    
+    metadata = {
+        'name': os.getenv('NOACCOUNT_ADDR'),
+        'location': os.getenv('NODE_NAME'),
+        'time': timestamp,
+        'type': 'timeout',
+        'photo': photo
+    }
+    
+    address = os.getenv('NODE_ADDR')
+    privateKey = os.getenv('NODE_PRIVATE')
+    
+    createLog(metadata)
+    
+def log_wrong_address(capture):
+    global address
+    global privateKey
+    global response
+    
+    timestamp = datetime.now().isoformat()
+   
+    os.makedirs(os.getcwd()+'/img')
+    timestamp = datetime.now().isoformat()
+    img_name = 'img/{}.jpg'.format(timestamp)
+    res = cv2.imwrite(img_name, capture)
 
     url = IPFS_ADDR
-    print(metadata)
+    files = open(img_name, 'rb')
+    r = requests.post(url, data=files)
+    response = r.headers['Ipfs-Hash']
+    print(response)
+    os.remove(img_name)
+    os.rmdir(os.getcwd()+'/img')
+    
+    metadata = {
+        'name': address,
+        'location': os.getenv('NODE_NAME'),
+        'time': timestamp,
+        'type': 'wrong_face',
+        'photo': response
+    }
+    
+    createLog(metadata)
+
+
+def allowedLog(metadata):
+    createLog(metadata)
+    access_page = accessPage()
+    GPIO.output(16, True)
+    time.sleep(5)
+    GPIO.output(16, False)
+    access_page.destroy()
+    mainPage()
+
+def createLog(metadata):  
+    
+    global address
+    global privateKey
+    
+    send_log_log()
+    
+    url = IPFS_ADDR
     jsonMeta = json.dumps(metadata, indent = 3)
-    print(jsonMeta)
     res = requests.post(url, json=jsonMeta)
     response = res.headers['Ipfs-Hash']
-    print(response)
-    page.destroy()
+    
     loading = loadingPage()
-    sendLog(loading, response)
+
+    tx = log_contract.functions.safeMint(address, response).buildTransaction({'nonce': w3.eth.getTransactionCount(address), 'gasPrice': w3.eth.gas_price, 'chainId': 51, 'from': address, "gas": 0});
+
+    gas = w3.eth.estimate_gas(tx)
+    
+    tx.update({'gas': gas})
+
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key=privateKey)
+
+    sent_tx = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    
+    w3.eth.wait_for_transaction_receipt(sent_tx)
+
+    finish_log_log()
+    
+    address, privateKey = None, None
+    
+    loading.destroy()
+    
 
 def getPhoto():
 
@@ -173,19 +309,18 @@ def getAccount(canvas, page):
     def decode(im) :
         decodedObjects = pyzbar.decode(im)
         return decodedObjects
+    
 
-    @timeout(30)
+    @timeout(30, timeout_exception=TimeoutError)
     def getImage(cap):
         while(cap.isOpened()):
-            # Capture frame-by-frame
             ret, frame = cap.read()
-            # Our operations on the frame come here
             im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             update_image(frame, canvas)
-
+            
             decodedObjects = decode(im)
 
-            if len(decodedObjects) == 1:
+            if len(decodedObjects) > 0:
                 return decodedObjects
 
     def decodeAddress(decodedObjects):
@@ -198,10 +333,17 @@ def getAccount(canvas, page):
 
         print(decodedObjects[0].data)
 
-        # When everything done, release the capture
-        try: 
-            (address, privateKey) = Web3.toText(decodedObjects[0].data).split('-')
-        except:
+        try:
+            privateKeyPem = open(os.getcwd()+'/privateKey.pem')
+            privateKey = RSA.importKey(privateKeyPem.read())
+            cipher = PKCS1_OAEP.new(privateKey)
+            raw_cipher_data = b64decode(decodedObjects[0].data)
+            privateKey = (cipher.decrypt(raw_cipher_data)).decode("utf-8")
+            account = w3.eth.account.privateKeyToAccount(Web3.toBytes(hexstr=privateKey))
+            address = account.address
+            print(address)
+        except Exception as e:
+            print(e)
             raise UnregisteredQRError
 
         if user_contract.functions.hasRole(DISABLED_ROLE, address).call() == True:
@@ -222,143 +364,30 @@ def getAccount(canvas, page):
         page.destroy()
         picturePage()
 
-    def log_register():
-        global address
-        global privateKey
-        global response
-        
-        photo = getPhoto()
-
-        timestamp = datetime.now().isoformat()
-        
-        metadata = {
-            'name': address,
-            'location': os.getenv('NODE_NAME'),
-            'time': timestamp,
-            'type': 'face_timeout',
-            'photo': photo
-        }
-        
-        createLog(metadata, page)
-    
-    def log_unregister():
-        global address
-        global privateKey
-        global response
-        
-        photo = getPhoto()
-
-        timestamp = datetime.now().isoformat()
-        
-        metadata = {
-            'name': os.getenv('NOACCOUNT_ADDR'),
-            'location': os.getenv('NODE_NAME'),
-            'time': timestamp,
-            'type': 'QR_mismatch',
-            'photo': photo
-        }
-        
-        address = os.getenv('NODE_ADDR')
-        privateKey = os.getenv('NODE_PRIVATE')
-        createLog(metadata, page)
-    
-    def log_timeout():
-        global address
-        global privateKey
-        global response
-        
-        photo = getPhoto()
-
-        timestamp = datetime.now().isoformat()
-        
-        metadata = {
-            'name': os.getenv('NOACCOUNT_ADDR'),
-            'location': os.getenv('NODE_NAME'),
-            'time': timestamp,
-            'type': 'timeout',
-            'photo': photo
-        }
-        
-        address = os.getenv('NODE_ADDR')
-        privateKey = os.getenv('NODE_PRIVATE')
-        createLog(metadata, page)
-
-    def log_wrong_address():
-        global address
-        global privateKey
-        global response
-        global face_capture
-        
-        timestamp = datetime.now().isoformat()
-       
-        os.makedirs(os.getcwd()+'/img')
-        timestamp = datetime.now().isoformat()
-        img_name = 'img/{}.jpg'.format(timestamp)
-        res = cv2.imwrite(img_name, face_capture)
-
-        url = IPFS_ADDR
-        files = open(img_name, 'rb')
-        r = requests.post(url, data=files)
-        response = r.headers['Ipfs-Hash']
-        print(response)
-        os.remove(img_name)
-        os.rmdir(os.getcwd()+'/img')
-        
-        metadata = {
-            'name': address,
-            'location': os.getenv('NODE_NAME'),
-            'time': timestamp,
-            'type': 'wrong_face',
-            'photo': response
-        }
-        
-        createLog(metadata, page)
-
-
     try:
+        read_qr_log()
         decodedObjects = getImage(cap)
         decodeAddress(decodedObjects) 
     except DisabledException: 
         address, privateKey = None, None
-        cap.release()
-        cv2.destroyAllWindows()
         page.destroy()
         mainPage()
-    except FaceTimeout:
-        print('face time')
-        cv2.destroyAllWindows()
-        global registered_tries
-        if registered_tries > 0:
-            log_register()
-            registered_tries = 0
-        registered_tries += 1
-        mainPage()
-    except WrongFaceException:
-        log_wrong_address()
-        mainPage()
     except UnregisteredQRError:
-        cap.release()
-        cv2.destroyAllWindows() 
         log_unregister()
         page.destroy()
         mainPage()
     except TimeoutError:
         cap.release()
-        cv2.destroyAllWindows() 
-        log_timeout()
+        cv2.destroyAllWindows()
         page.destroy()
-        mainPage()
-    except Exception as e:
-        print(e)
-        cap.release()
-        cv2.destroyAllWindows() 
         global unregister_tries
         unregister_tries += 1
         if unregister_tries > 2:
             log_unregister()
             unregister_tries = 0
-        page.destroy()
-        mainPage()
+            mainPage()
+        else:
+            mainPage()
 
 def getPicture(canvas, frame):
     global response
@@ -371,8 +400,10 @@ def getPicture(canvas, frame):
     time.sleep(2)
 
     cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    
+    read_face_log()
 
-    @timeout(30)
+    @timeout(30, timeout_exception=TimeoutError)
     def getImage():
         tries = 0
         while(cam.isOpened()):
@@ -392,41 +423,53 @@ def getPicture(canvas, frame):
 
     try:
         capture = getImage()
-    except:
+    except TimeoutError:
         cam.release()
+        cv2.destroyAllWindows()
         frame.destroy()
-        raise FaceTimeout
+        global registered_tries
+        if registered_tries > 0:
+            log_register()
+            registered_tries = 0
+            mainPage()
+        else:
+            mainPage()
+        registered_tries += 1
+        return
 
     cam.release()
     cv2.destroyAllWindows()
-    
+
     os.makedirs(os.getcwd()+'/img')
     timestamp = datetime.now().isoformat()
     img_name = 'img/{}.jpg'.format(timestamp)
     res = cv2.imwrite(img_name, capture)
 
-    cam.release()
-
+    frame.destroy()
+    
+    loading = loadingPage()
     print(img_name) 
     try:
         face_addr = facerecog.findFace(img_name)
-    except:
+        print(face_addr)
+    except ValueError:
+        print('Value-Error')
         os.remove(img_name)
         os.rmdir(os.getcwd()+'/img')
-        frame.destroy()
-        raise Exception
+        loading.destroy()
+        log_wrong_address(capture)
+        mainPage()
+        return
 
-    print('addr: '+face_addr == address)
+    if face_addr != address or face_addr == None:
+        os.remove(img_name)
+        os.rmdir(os.getcwd()+'/img')
+        loading.destroy()
+        log_wrong_address(capture)
+        mainPage()
+        return 
     
-    if face_addr != address:
-        global face_capture
-        os.remove(img_name)
-        os.rmdir(os.getcwd()+'/img')
-        face_capture = capture
-        frame.destroy()
-        raise WrongFaceException
-
-    print('face addr: '+face_addr)
+    finish_face_log()
 
     url = IPFS_ADDR
     files = open(img_name, 'rb')
@@ -443,16 +486,43 @@ def getPicture(canvas, frame):
         'type': 'allowed'
     }
 
-    createLog(metadata, frame)
+    loading.destroy()
+
+    allowedLog(metadata)
 
 def main():
+    loading = loadingPage()
     if os.path.exists(os.getcwd()+'/db/') == False:
-        print('new user')
+        print('New User Found!')
         newuser.getUsers()
     newuser.checkUsers()
     newuser.listenNewUser()
+    loading.destroy()
     mainPage()
     root.mainloop()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        if os.path.exists(os.getcwd()+'/img/'):
+            shutil.rmtree(os.getcwd()+'/img')
+        GPIO.cleanup()
+    except requests.exceptions.HTTPError:
+        print('Network Error')
+        error_page = errorPage()
+        time.sleep(10)
+        error_page.destroy()
+        os.execl(sys.executable, sys.executable, *sys.argv)
+    except requests.exceptions.ReadTimeout:
+        error_page = errorPage()
+        print('Network Error')
+        time.sleep(10)
+        error_page.destroy()
+        os.execl(sys.executable, sys.executable, *sys.argv)
+    except Exception as e:
+        if os.path.exists(os.getcwd()+'/img/'):
+            shutil.rmtree(os.getcwd()+'/img')
+        print(repr(e))
+    finally:
+        exit()

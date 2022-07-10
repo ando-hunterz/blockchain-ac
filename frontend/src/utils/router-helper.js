@@ -12,6 +12,7 @@ const isAdmin = async () => {
   console.log("admin check");
   const crypto = useCrypto();
   const address = await crypto.signer.getAddress();
+  
   if (getEncryptedCookie("role", address) != "admin") return false;
   return true;
 };
@@ -19,7 +20,11 @@ const isAdmin = async () => {
 const isLogin = async (to, from) => {
   console.log("login check");
   const crypto = useCrypto();
-  if (crypto.signer == null && !isRouteFromBase(from)) router.push("/");
+  
+  if (crypto.signer == null && !isRouteFromBase(from)){
+    window.alert('error')
+    router.push("/");
+  } 
 };
 
 const isRouteFromBase = (router) => {

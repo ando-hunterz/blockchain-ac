@@ -1,21 +1,11 @@
-import IPFS from "../modules/ipfs/ipfs-core/ipfs-http-client";
-import { arrayToBase64, chunkArrayToJson } from "./file";
-let ipfsNode;
+import axios from 'axios';
+const ipfsNode = import.meta.env.VITE_IPFS_ADDR+'/ipfs/'
 
-const connectIpfsNode = async () => {
-  try {
-    ipfsNode = await IPFS.create(import.meta.env.VITE_IPFS_ADDR);
-  } catch (e) {
-    alert(e);
-  }
-};
+axios.defaults.headers.post['Access-Control-Allow-Origin'] = '*';
 
 const addFile = async (file) => {
-  console.log(ipfsNode);
-  if (ipfsNode == undefined) await connectIpfsNode();
-  console.log(file);
-  const filepath = await ipfsNode.add(file);
-  return filepath.cid.toString();
+    const response =  await axios.post(ipfsNode, file)
+    return response.headers["ipfs-hash"]
 };
 
 const uploadPhotos = async (photos) => {
@@ -28,32 +18,21 @@ const uploadPhotos = async (photos) => {
 };
 
 const getJsonFile = async (path) => {
-  if (ipfsNode == undefined) await connectIpfsNode();
-  for await (const chunk of ipfsNode.cat(path)) {
-    return chunkArrayToJson(chunk);
-  }
+  const response =  await axios.get(ipfsNode+path)
+  return response.data
+ 
 };
 
 const getImageFile = async (path) => {
-  if (ipfsNode == undefined) await connectIpfsNode();
-  let chunks = [];
-  for await (const chunk of ipfsNode.cat(path)) {
-    chunks.push(chunk)
-  }
-  // Get the total length of all arrays.
-  let length = 0;
-  chunks.forEach(item => {
-    length += item.length;
-  });
-
-  // Create a new array with total length and merge all source arrays.
-  let imageChunk = new Uint8Array(length);
-  let offset = 0;
-  chunks.forEach(item => {
-    imageChunk.set(item, offset);
-    offset += item.length;
-  });
-  return URL.createObjectURL(new Blob([imageChunk], { type: "image/jpeg" }));
+  const response =  await axios.get(ipfsNode+path, {responseType: 'blob'})
+  console.log(response.data)
+  
+  return URL.createObjectURL(response.data);
 };
 
-export { addFile, uploadPhotos, getJsonFile, getImageFile };
+const getFile = async (path) => {
+  const response =  await axios.get(ipfsNode+path)
+  return response.data
+};
+
+export { addFile, uploadPhotos, getJsonFile, getImageFile, getFile };

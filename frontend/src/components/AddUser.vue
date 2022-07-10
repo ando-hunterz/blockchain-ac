@@ -16,6 +16,7 @@ import {
 } from "../utils/account";
 import { downloadBlob } from "../utils/file";
 import { useNavigation } from "../stores/navigation";
+import { createAccount, accountCreated } from "../utils/logger"
 
 const crypto = useCrypto();
 const navigation = useNavigation();
@@ -67,6 +68,7 @@ watch(
 );
 
 const saveUser = async () => {
+  createAccount()
   error.photos = form.photos.length < 3 ? "Photo is insufficient" : null;
   if (error.photos != null) {
     navigation.addAlert({ message: error.photos, type: "Error" });
@@ -97,7 +99,7 @@ const saveUser = async () => {
       navigation.addAlert({ message: "Name Found", type: "Error" });
       return;
     }
-    navigation.setLoading();
+    navigation.setLoading(60);
     const account = Wallet.createRandom();
     const password = keccak256(utils.toUtf8Bytes(form.nameString));
     const jsonKeyURI = await createKeystore(account, password);
@@ -113,15 +115,19 @@ const saveUser = async () => {
     const tx = {
       from: address,
       to: account.address,
-      value: utils.parseEther("0.5"),
+      value: utils.parseEther("10"),
     };
-    await crypto.signer.sendTransaction(tx);
-    await crypto.contract.safeMint(
+    const signedTx = await crypto.signer.sendTransaction(tx);
+    await signedTx.wait()    
+
+    const mintTx = await crypto.contract.safeMint(
       account.address,
       metadataURI,
       password,
       jsonKeyURI
     );
+    await mintTx.wait()
+    accountCreated()
     navigation.clearLoading();
     const newUser = {
       address: account.address,

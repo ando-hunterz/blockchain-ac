@@ -23,10 +23,8 @@ const state = reactive({
 const changePage = async (page) => {
   console.log("change page");
   console.log('page: '+page)
-  state.logIndex = (page - 1) * 10; // 10
-  state.itemsCount = page * 10 // 30
-  // 10 20 30 40 50
-  // 30
+  state.logIndex = (page - 1) * 10; 
+  state.itemsCount = page * 10 
   state.index = state.logCount - (page-1) * 10; 
   console.log(state.index)
   if(state.index < 0) state.index = state.index + 10
@@ -39,24 +37,18 @@ const changePage = async (page) => {
 const getLog = async () => {
   navigation.setLoading();
   let logs = [];
+  const name = await getName(await crypto.signer.getAddress());
   for (
     let index = state.index - 1; // 22
-    index >= 0 && index >= state.logCount - state.page * 10;
+    index >= 0 && index >= state.logCount - state.page * 10; // 23 - 10 = 13
     index--
   ) {
+    
     const owner = await crypto.logContract.ownerOf(index);
+    if( owner != await crypto.signer.getAddress()) continue
     const uri = await crypto.logContract.tokenURI(index);
     const jsonUri = await getJsonFile(uri);
-    let address, name;
-    if (owner != import.meta.env.VITE_NODE_ADDR) {
-      name = await getName(owner);
-    } else {
-      address = JSON.parse(jsonUri).name;
-      name =
-        address != import.meta.env.VITE_NOACCOUNT_ADDR
-          ? await getName(address)
-          : "Unregistered";
-    }
+    
     const log = {
       name: name,
       address: owner,
@@ -98,7 +90,7 @@ const bgColor = (status) => {
     wrong_face: "bg-red-400",
     disabled: "bg-yellow-400",
     QR_mismatch: "bg-red-400",
-    face_timeout: "bg-red-400",
+    face_timeout: "bg-red-400",  
   };
   return statusBg[status];
 };
@@ -115,7 +107,7 @@ const getReason = (type) => {
   const statusReason = {
     unallowed: "Unregistered",
     QR_mismatch: "QR is not recognized",
-    timeout: "QR not detected within 30s",
+    timeout: "QR/Face not detected within 30s",
     wrong_face: "QR Code address and face mismatch",
     disabled: "User is disabled",
     face_timeout: "Face not detected within 30s",
@@ -155,7 +147,7 @@ onBeforeMount(async () => {
           @click="showCapture(index)"
         >
           <div
-            class="flex flex-row justify-between my-2 rounded py-1 px-2"
+            class="flex flex-col md:flex-row justify-between my-2 rounded py-1 px-2"
             :class="bgColor(log.uri.type)"
           >
             <span>{{ log.name }}</span>

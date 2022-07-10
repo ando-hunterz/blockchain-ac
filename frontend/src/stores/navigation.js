@@ -17,13 +17,13 @@ export const useNavigation = defineStore("navigation", {
   getters: {},
 
   actions: {
-      setLoading() {
+      setLoading(time = 6) {
           this.loading = true
           if(this.timeout != null) clearTimeout(this.timeout)
           this.timeout = setTimeout(() => {
               alert('Failed')
               this.loading = false;
-          }, 30000)
+          }, time  * 10000)
       },
       clearLoading() {
           this.loading = false;

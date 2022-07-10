@@ -55,6 +55,19 @@ onBeforeMount(async () => {
               <span class="col-span-2">Show Logs</span>
             </router-link>
           </div>
+          <div
+            v-else
+            class="flex flex-col items-center gap-4 mt-4 font-semibold"
+          >
+            <router-link to="/user" class="grid grid-cols-3 w-full">
+              <span class="text-center">🏚</span>
+              <span class="col-span-2">Dashboard</span>
+            </router-link>
+            <router-link to="/user/log" class="grid grid-cols-3 w-full">
+              <span class="text-center">📄</span>
+              <span class="col-span-2">Show Logs</span>
+            </router-link>
+          </div>
         </div>
       <div class="bg-gray-100 px-6 py-4 overflow-visible overscroll-none grow">
         <slot></slot>

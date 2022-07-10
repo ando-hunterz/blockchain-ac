@@ -86,7 +86,8 @@ const updateUser = async () => {
     );
     navigation.setLoading();
     try {
-      await crypto.contract.deleteMapping(oldString);
+      const deleteTx = await crypto.contract.deleteMapping(oldString);
+      await deleteTx.wait();
     } catch (e) {
       navigation.addAlert({ message: e.message, type: "Error" });
       return;
@@ -102,11 +103,16 @@ const updateUser = async () => {
     );
     const metadataURI = await addFile(jsonURI);
     try {
-      await crypto.contract.updateUser(nameString, metadataURI, state.tokenId);
-      navigation.clearLoading()
-      navigation.addAlert({message: "User Updated", type: "Success"})
+      const updateTx = await crypto.contract.updateUser(
+        nameString,
+        metadataURI,
+        state.tokenId
+      );
+      await updateTx.wait();
+      navigation.clearLoading();
+      navigation.addAlert({ message: "User Updated", type: "Success" });
     } catch (e) {
-      navigation.clearLoading()
+      navigation.clearLoading();
       navigation.addAlert(e.message);
       return;
     }
@@ -122,13 +128,17 @@ const updateUser = async () => {
       [makeJsonObject(jsonMetadata)],
       props.user.address + ".json"
     );
-    try{
+    try {
       const metadataURI = await addFile(jsonURI);
-      await crypto.contract.updateUserMetadata(state.tokenId, metadataURI);
-      navigation.clearLoading()
-      navigation.addAlert({message: "User Updated", type: "Success"})
+      const updateTx = await crypto.contract.updateUserMetadata(
+        state.tokenId,
+        metadataURI
+      );
+      await updateTx.wait();
+      navigation.clearLoading();
+      navigation.addAlert({ message: "User Updated", type: "Success" });
     } catch (e) {
-      navigation.addAlert({message: e.message, type: "Error"})
+      navigation.addAlert({ message: e.message, type: "Error" });
     }
   }
 };
@@ -156,7 +166,11 @@ const resetPassword = async () => {
     );
     const metadataURI = await addFile(jsonURI);
     console.log(metadataURI);
-    await crypto.contract.updateUserMetadata(state.tokenId, metadataURI);
+    const updateTx = await crypto.contract.updateUserMetadata(
+      state.tokenId,
+      metadataURI
+    );
+    await updateTx.wait();
     navigation.clearLoading();
     navigation.addAlert({ message: "Reset Password Success", type: "Success" });
   } catch (e) {
@@ -173,6 +187,18 @@ const addPhoto = (image) => {
 const deletePhoto = (index) => {
   state.photos.splice(index, 1);
 };
+
+const addFunds = async () => {
+  navigation.setLoading()
+  const tx = {
+      from: await crypto.signer.getAddress(),
+      to: props.user.address,
+      value: utils.parseEther("10"),
+    };
+    const signedTx = await crypto.signer.sendTransaction(tx);
+    await signedTx.wait()    
+  navigation.clearLoading()
+}
 
 onMounted(async () => {
   state.tokenId = (
@@ -217,8 +243,14 @@ watch(
       @photo-deleted="deletePhoto"
     ></user-dropzone>
     <button
-      @click="updateUser()"
+      @click="addFunds"
       class="w-1/3 mx-auto bg-blue-500 rounded-md text-white mt-4"
+    >
+      Add More ETH
+    </button>
+    <button
+      @click="updateUser()"
+      class="w-1/3 mx-auto bg-blue-500 rounded-md text-white"
     >
       Save
     </button>

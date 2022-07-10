@@ -1,4 +1,4 @@
-import { ethers, utils } from "ethers";
+import { ethers } from "ethers";
 import {
   addCookie,
   addEncryptedCookie,
@@ -7,7 +7,7 @@ import {
 import UserContract from "../contracts/UserToken.sol/UserToken.json";
 import LogContract from '../contracts/LogToken.sol/LogToken.json'
 import { useCrypto } from "../stores/crypto";
-import { keccak256 } from "ethers/lib/utils";
+import router from "./router";
 
 const connectToBlockchain = async (crypto) => {
   await connectProvider(crypto);
@@ -18,8 +18,9 @@ const connectToBlockchain = async (crypto) => {
   } catch (e) {
     window.alert(e);
   }
-  console.log('ho')
+  
 };
+
 const checkForProvider = () => {
   if (window.ethereum == undefined) return false;
   return true;
@@ -27,15 +28,15 @@ const checkForProvider = () => {
 
 const connectProvider = async (crypto) => {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
-  console.log(provider);
+  console.log(await provider.ready);
   try {
     await provider.send("eth_requestAccounts", []);
     crypto.$patch({
       provider: provider,
     });
-
   } catch (e) {
-    window.alert(e);
+    window.alert("Network Might Be Error");
+    router.push('/404')
   }
 };
 
@@ -45,6 +46,7 @@ const setSigner = async (crypto) => {
   crypto.$patch({
     signer: signer,
   });
+
 };
 
 const connectUserContract = async (crypto) => {
@@ -57,6 +59,7 @@ const connectUserContract = async (crypto) => {
     contract: contract,
   });
   addCookie("crypto", true);
+
 };
 
 const connectLogContract = async (crypto) => {
@@ -87,8 +90,10 @@ const isAdminRole = async (crypto, address) => {
       : "user";
       addEncryptedCookie("role", role, address);
   } catch (e) {
-    window.alert(e);
+    window.alert("Network Might Be Error");
+    router.push('/404')
   }
+
   
 };
 
