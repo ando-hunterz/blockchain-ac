@@ -32,14 +32,18 @@ router.beforeEach(async (to, from) => {
   ) {
     const provider = checkForProvider();
     if(!await window.ethereum._metamask.isUnlocked() && getCookie('crypto') != undefined) {
+      window.alert('not pass')
       removeCookies('crypto');
       removeCookies('role')
       router.push('/')
     }
+
     if (!provider && !isRouteFromBase(router)) router.push("/");
+    window.alert('pass')
     if (getCookie("crypto") === "true")
       try {
         await connectToBlockchain(crypto);
+        window.alert('pass')
       } catch (e) {
         window.alert(e);
       }

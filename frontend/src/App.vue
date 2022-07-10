@@ -1,7 +1,7 @@
 <script setup>
 import { useCrypto } from "./stores/crypto";
 import { useNavigation } from "./stores/navigation";
-import { removeCookies } from "./utils/cookies";
+import { addCookie, removeCookies } from "./utils/cookies";
 import { routeTo } from "./utils/router-helper";
 import LoadingComponent from './components/LoadingComponent.vue'
 import AlertComponent from './components/AlertComponent.vue'
@@ -11,7 +11,6 @@ const navigation = useNavigation();
 
 if (window.ethereum) {
   window.ethereum.on("accountsChanged", (account) => {
-    console.log(account);
     removeCookies("crypto");
     removeCookies("role");
     crypto.$patch({

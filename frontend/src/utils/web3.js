@@ -18,7 +18,7 @@ const connectToBlockchain = async (crypto) => {
   } catch (e) {
     window.alert(e);
   }
-  console.log('ho')
+  
 };
 
 const checkForProvider = () => {
@@ -34,7 +34,6 @@ const connectProvider = async (crypto) => {
     crypto.$patch({
       provider: provider,
     });
-
   } catch (e) {
     window.alert("Network Might Be Error");
     router.push('/404')
@@ -47,6 +46,7 @@ const setSigner = async (crypto) => {
   crypto.$patch({
     signer: signer,
   });
+
 };
 
 const connectUserContract = async (crypto) => {
@@ -59,6 +59,7 @@ const connectUserContract = async (crypto) => {
     contract: contract,
   });
   addCookie("crypto", true);
+
 };
 
 const connectLogContract = async (crypto) => {
@@ -92,6 +93,7 @@ const isAdminRole = async (crypto, address) => {
     window.alert("Network Might Be Error");
     router.push('/404')
   }
+
   
 };
 

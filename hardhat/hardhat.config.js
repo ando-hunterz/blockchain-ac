@@ -27,7 +27,7 @@ module.exports = {
     },
     local: {
       url: `${process.env.PROVIDER_ADDR}`,
-      chainId: 51,
+      chainId: 1021,
     }
   },
   solidity: "0.8.4",

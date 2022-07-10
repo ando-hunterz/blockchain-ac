@@ -147,7 +147,7 @@ onBeforeMount(async () => {
           @click="showCapture(index)"
         >
           <div
-            class="flex flex-row justify-between my-2 rounded py-1 px-2"
+            class="flex flex-col md:flex-row justify-between my-2 rounded py-1 px-2"
             :class="bgColor(log.uri.type)"
           >
             <span>{{ log.name }}</span>
